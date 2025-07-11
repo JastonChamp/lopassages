@@ -3,10 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
       currentIndex = 0,
       wordRanges = [], // Global, but reset per passage
       currentSpeakingSpan = null,
-      stars = 0;
+      stars = 0,
+      currentSpeed = 0.8; // Default speed
 
   const whooshSound = document.getElementById('whoosh-sound'),
-        cheerSound = document.getElementById('cheer-sound');
+        cheerSound = document.getElementById('cheer-sound'),
+        speedBtn = document.getElementById('speed-btn');
 
   // Load the stories JSON
   fetch('passages.json')
@@ -131,6 +133,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Adjust reading speed
+  function adjustSpeed() {
+    const speeds = [0.5, 0.8, 1.2]; // Slow, Normal, Fast
+    const labels = ['Slow', 'Normal', 'Fast'];
+    const currentIndex = speeds.indexOf(currentSpeed);
+    const nextIndex = (currentIndex + 1) % speeds.length;
+    currentSpeed = speeds[nextIndex];
+    speedBtn.textContent = `Speed: ${labels[nextIndex]}`;
+    console.log(`Speed set to: ${currentSpeed}`); // Debug log
+  }
+
   // Read-aloud with word highlighting
   document.getElementById('play-btn').addEventListener('click', () => {
     window.speechSynthesis.cancel();
@@ -141,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const text = document.getElementById('passage-text').textContent || '';
     const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.8;
+    utter.rate = currentSpeed; // Use current speed
 
     utter.onboundary = event => {
       if (event.name === 'word') {
@@ -167,6 +180,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.speechSynthesis.speak(utter);
   });
+
+  // Speed button
+  document.getElementById('speed-btn').addEventListener('click', adjustSpeed);
 
   // Prev/Next buttons
   document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
