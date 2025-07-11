@@ -12,9 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize button text with default speed
   const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
-  const labels = ['Very Slow', 'Normal', 'Fast']; // Simplified labels for testing
+  const labels = ['Very Slow', 'Slow', 'Normal', 'Fast']; // Ensure 1:1 mapping
+  if (!speeds.includes(currentSpeed)) currentSpeed = 0.6; // Fallback
   speedBtn.textContent = `Speed: ${labels[speeds.indexOf(currentSpeed)]}`;
-  console.log(`Initial speed set to: ${currentSpeed}`); // Debug initial state
+  console.log(`Initial speed set to: ${currentSpeed}, Label: ${labels[speeds.indexOf(currentSpeed)]}`); // Debug initial state
 
   // Load the stories JSON
   fetch('passages.json')
@@ -142,10 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Adjust reading speed
   function adjustSpeed() {
     const currentIndex = speeds.indexOf(currentSpeed);
+    if (currentIndex === -1) {
+      console.error('Current speed not found in speeds array:', currentSpeed);
+      currentSpeed = 0.6; // Fallback to default
+    }
     const nextIndex = (currentIndex + 1) % speeds.length;
     currentSpeed = speeds[nextIndex];
-    speedBtn.textContent = `Speed: ${labels[nextIndex]}`;
-    console.log(`Speed adjusted to: ${currentSpeed} (${labels[nextIndex]})`); // Enhanced debug
+    const label = labels[nextIndex] || 'Unknown';
+    speedBtn.textContent = `Speed: ${label}`;
+    console.log(`Speed adjusted to: ${currentSpeed}, Label: ${label}`); // Enhanced debug
   }
 
   // Read-aloud with word highlighting
