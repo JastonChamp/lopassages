@@ -169,4 +169,4 @@ const whooshSound = document.getElementById('whoosh-sound'),
   // Prev/Next buttons
   document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn').addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
-});
+};
