@@ -23,10 +23,22 @@
     </div>
 
     <div id="controls">
-      <button id="prev-btn" disabled>⬅️</button>
-      <button id="play-btn">🎵</button>
-      <button id="next-btn" disabled>➡️</button>
-      <button id="star-btn" disabled>⭐</button>
+     <button id="prev-btn" disabled aria-label="Previous">
+        <span aria-hidden="true">⬅️</span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button id="play-btn" aria-label="Play narration">
+        <span aria-hidden="true">🎵</span>
+        <span class="visually-hidden">Play narration</span>
+      </button>
+      <button id="next-btn" disabled aria-label="Next">
+        <span aria-hidden="true">➡️</span>
+        <span class="visually-hidden">Next</span>
+      </button>
+      <button id="star-btn" disabled aria-label="Earn a star">
+        <span aria-hidden="true">⭐</span>
+        <span class="visually-hidden">Earn a star</span>
+      </button>
     </div>
 
     <div id="star-counter">
