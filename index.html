@@ -4,159 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reading Practice App</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
-    }
-    #passage-container {
-      max-width: 800px;
-      margin: 20px auto;
-      padding: 20px;
-      background-color: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    #passage-title {
-      font-size: 24px;
-      text-align: center;
-    }
-    #passage-info {
-      text-align: center;
-      font-size: 14px;
-      color: #666;
-    }
-    #passage-text {
-      font-size: 18px;
-      line-height: 1.5;
-    }
-    #passage-image {
-      display: block;
-      margin: 20px auto;
-      max-width: 300px;
-    }
-    #controls {
-      text-align: center;
-      margin-top: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      margin: 0 10px;
-      font-size: 16px;
-    }
-    #audio-player {
-      display: none;
-      margin: 20px auto;
-    }
-    .highlight {
-      color: red;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="passage-container">
-    <h1 id="passage-title"></h1>
-    <p id="passage-info"></p>
-    <div id="passage-text"></div>
-    <img id="passage-image" src="" alt="Passage Image">
+  <div id="book">
+    <div id="page">
+      <!-- Passage content will be loaded here -->
+    </div>
   </div>
   <div id="controls">
-    <button id="record-btn">Record</button>
     <button id="prev-btn" disabled>Previous</button>
+    <button id="play-btn">Play</button>
     <button id="next-btn" disabled>Next</button>
   </div>
-  <audio id="audio-player" controls></audio>
-  <script>
-    let passages = [];
-    let currentPassageIndex = 0;
-    let mediaRecorder;
-    let recordedChunks = [];
-    let isRecording = false;
-
-    // Fetch passages from JSON file
-    fetch('passages.json')
-      .then(response => response.json())
-      .then(data => {
-        passages = data;
-        displayPassage(currentPassageIndex);
-        updateNavigationButtons();
-      })
-      .catch(error => console.error('Error loading passages:', error));
-
-    // Display the current passage
-    function displayPassage(index) {
-      const passage = passages[index];
-      document.getElementById('passage-title').innerHTML = passage.title;
-      document.getElementById('passage-info').textContent = `Passage ${index + 1} of ${passages.length}`;
-      document.getElementById('passage-text').innerHTML = passage.text;
-      document.getElementById('passage-image').src = passage.image;
-      // Reset recording
-      recordedChunks = [];
-      document.getElementById('audio-player').src = '';
-      document.getElementById('audio-player').style.display = 'none';
-    }
-
-    // Update navigation button states
-    function updateNavigationButtons() {
-      document.getElementById('prev-btn').disabled = currentPassageIndex === 0;
-      document.getElementById('next-btn').disabled = currentPassageIndex === passages.length - 1;
-    }
-
-    // Record button functionality
-    document.getElementById('record-btn').addEventListener('click', () => {
-      if (!isRecording) {
-        recordedChunks = [];
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => {
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            isRecording = true;
-            document.getElementById('record-btn').textContent = 'Stop';
-            mediaRecorder.addEventListener('dataavailable', event => {
-              recordedChunks.push(event.data);
-            });
-            mediaRecorder.addEventListener('stop', () => {
-              const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-              const url = URL.createObjectURL(blob);
-              document.getElementById('audio-player').src = url;
-              document.getElementById('audio-player').style.display = 'block';
-              stream.getTracks().forEach(track => track.stop());
-            });
-          })
-          .catch(error => console.error('Error accessing microphone:', error));
-      } else {
-        mediaRecorder.stop();
-        isRecording = false;
-        document.getElementById('record-btn').textContent = 'Record';
-      }
-    });
-
-    // Previous button functionality
-    document.getElementById('prev-btn').addEventListener('click', () => {
-      if (isRecording) {
-        mediaRecorder.stop();
-        isRecording = false;
-        document.getElementById('record-btn').textContent = 'Record';
-      }
-      if (currentPassageIndex > 0) {
-        currentPassageIndex--;
-        displayPassage(currentPassageIndex);
-        updateNavigationButtons();
-      }
-    });
-
-    // Next button functionality
-    document.getElementById('next-btn').addEventListener('click', () => {
-      if (isRecording) {
-        mediaRecorder.stop();
-        isRecording = false;
-        document.getElementById('record-btn').textContent = 'Record';
-      }
-      if (currentPassageIndex < passages.length - 1) {
-        currentPassageIndex++;
-        displayPassage(currentPassageIndex);
-        updateNavigationButtons();
-      }
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
