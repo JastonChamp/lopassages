@@ -9,6 +9,7 @@
 </head>
 <body>
   <div id="game-container">
+    <img src="https://via.placeholder.com/800x200.png?text=Fun+Phonics+Adventure" alt="Fun Phonics Adventure Banner" class="header-image">
     <h1 class="title">Fun Phonics Adventure! 🎉</h1>
 
     <div id="progress-container">
@@ -22,23 +23,14 @@
       <div id="page"></div>
     </div>
 
-    <div id="controls">
-     <button id="prev-btn" disabled aria-label="Previous">
-        <span aria-hidden="true">⬅️</span>
-        <span class="visually-hidden">Previous</span>
+   <button id="prev-btn" disabled>Back ⬅️</button>
       </button>
       <button id="play-btn" aria-label="Play narration">
         <span aria-hidden="true">🎵</span>
         <span class="visually-hidden">Play narration</span>
       </button>
-      <button id="next-btn" disabled aria-label="Next">
-        <span aria-hidden="true">➡️</span>
-        <span class="visually-hidden">Next</span>
-      </button>
-      <button id="star-btn" disabled aria-label="Earn a star">
-        <span aria-hidden="true">⭐</span>
-        <span class="visually-hidden">Earn a star</span>
-      </button>
+    <button id="next-btn" disabled>Next ➡️</button>
+      <button id="star-btn" disabled>Star ⭐</button>
     </div>
 
     <div id="star-counter">
@@ -46,9 +38,9 @@
     </div>
   </div>
 
-  <audio id="clap-sound"
-         src="https://www.soundjay.com/buttons/beep-01a.mp3"
-        preload></audio>
+ <audio id="whoosh-sound"
+         src="https://www.soundjay.com/transportation/sounds/airplane-flyby-01.mp3"
+         preload></audio>
   <audio id="cheer-sound"
          src="https://www.soundjay.com/human/cheer-01.mp3"
          preload></audio>
