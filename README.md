@@ -1,0 +1,22 @@
+# Fun Phonics Adventure
+
+This simple webapp presents phonics stories that can be read aloud using the browser's Speech Synthesis API.
+
+## Running the App
+
+Because the app loads data with `fetch`, it must be served over HTTP. If you open `index.html` directly from the filesystem the stories will fail to load.
+
+Use a small local server instead:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then visit `http://localhost:8000` in your browser.
+
+## Files
+- `index.html` – main page
+- `script.js` – logic and interactions
+- `styles.css` – styling
+- `passages.json` – story data
+- `images/` – illustrations
