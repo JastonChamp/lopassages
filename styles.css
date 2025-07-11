@@ -1,3 +1,9 @@
+/* Root variables for progress bar */
+:root {
+  --current: 1;
+  --total: 13;
+}
+
 /* Body styles */
 body {
   font-family: 'Comic Sans MS', cursive, sans-serif;
@@ -12,19 +18,22 @@ body {
 
 /* Game container */
 #game-container {
-  text-align: center;
+  width: 95%;
   max-width: 900px;
-  width: 100%;
+  text-align: center;
   padding: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
 }
 
 /* Title styles */
 .title {
-  font-size: 2.5em;
+  font-size: 2.8em;
   color: #ff4500;
-  text-shadow: 2px 2px #ffd700;
+  text-shadow: 3px 3px #ffd700;
   margin-bottom: 10px;
-  animation: bounce 2s infinite;
+  animation: bounce 2s infinite ease-out;
 }
 
 @keyframes bounce {
@@ -39,6 +48,7 @@ body {
 }
 
 #progress-bar {
+  position: relative;
   width: 100%;
   height: 20px;
   background: #ddd;
@@ -49,16 +59,16 @@ body {
 
 #progress-bar::after {
   content: '';
-  display: block;
+  position: absolute;
+  top: 0; left: 0;
   height: 100%;
   background: linear-gradient(to right, #ff69b4, #ff4500);
   width: calc((var(--current) / var(--total)) * 100%);
-  transition: width 0.5s;
-  border-radius: 10px;
+  transition: width 0.5s ease;
 }
 
 #story-progress {
-  font-size: 1.5em;
+  font-size: 1.4em;
   color: #4682b4;
   font-weight: bold;
 }
@@ -68,25 +78,26 @@ body {
   position: relative;
   width: 100%;
   height: 650px;
-  overflow: hidden;
   background: #fffacd;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
   border-radius: 10px;
-  padding: 10px;
+  overflow: hidden;
+  margin-bottom: 15px;
 }
 
 /* Page styles */
 #page {
   position: absolute;
   width: 100%;
+  height: 100%;
   padding: 20px;
-  transition: transform 0.5s ease-in-out;
+  box-sizing: border-box;
   background: white;
   border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.5s ease-in-out;
 }
 
-/* Title styles */
+/* Passage title & info */
 #passage-title {
   font-size: 2em;
   color: #ff4500;
@@ -94,7 +105,6 @@ body {
   margin-bottom: 10px;
 }
 
-/* Info styles */
 #passage-info {
   text-align: left;
   font-size: 1.2em;
@@ -102,7 +112,7 @@ body {
   margin-bottom: 15px;
 }
 
-/* Text styles */
+/* Text block */
 #passage-text {
   font-size: 1.5em;
   line-height: 1.8;
@@ -125,28 +135,28 @@ body {
   50% { transform: translateY(-15px); }
 }
 
-/* Controls styles */
+/* Controls */
 #controls {
-  margin-top: 15px;
   display: flex;
   justify-content: center;
   gap: 15px;
+  margin-bottom: 10px;
 }
 
-/* Button styles */
 button {
   width: 60px;
   height: 60px;
   font-size: 1.5em;
-  background: linear-gradient(to right, #ff69b4, #ff4500);
+  background: linear-gradient(45deg, #ff69b4, #ff4500);
   color: white;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: transform 0.2s;
 }
 
-button:hover:enabled, button:active:enabled {
+button:enabled:hover,
+button:enabled:active {
   transform: scale(1.2);
 }
 
@@ -156,67 +166,50 @@ button:disabled {
   transform: scale(1);
 }
 
-/* Word styles */
+/* Star counter */
+#star-counter {
+  font-size: 1.5em;
+  color: #ffd700;
+  text-shadow: 1px 1px #ff4500;
+}
+
+/* Word highlighting */
 .word {
+  display: inline-block;
   padding: 0 2px;
-  position: relative;
 }
 
 .word.speaking .highlight {
-  background: #fffacd;
-  box-shadow: 0 0 10px #fffacd;
-  animation: glow 1.5s infinite alternate;
+  background: rgba(255, 255, 0, 0.7);
+  animation: glow 1s infinite alternate;
 }
 
 @keyframes glow {
   from { box-shadow: 0 0 5px #fffacd; }
-  to { box-shadow: 0 0 15px #fffacd; }
+  to   { box-shadow: 0 0 15px #fffacd; }
 }
 
-/* Highlight styles */
+/* Vowel highlight */
 .highlight {
   color: #ff0000;
   font-weight: bold;
-  display: inline;
-  background: none;
 }
 
 /* Slide animations */
 .slide-left {
   transform: translateX(-100%);
-  animation: slideOutLeft 0.5s ease-out;
+  animation: slideOutLeft 0.5s ease-out forwards;
 }
-
 .slide-right {
   transform: translateX(100%);
-  animation: slideOutRight 0.5s ease-out;
+  animation: slideOutRight 0.5s ease-out forwards;
 }
 
 @keyframes slideOutLeft {
   from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
+  to   { transform: translateX(-100%); }
 }
-
 @keyframes slideOutRight {
   from { transform: translateX(0); }
-  to { transform: translateX(100%); }
-}
-
-/* Star button animation */
-#star-btn:enabled {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-/* Star counter */
-#star-counter {
-  font-size: 1.5em;
-  color: #ffd700;
-  margin-top: 10px;
-  text-shadow: 1px 1px #ff4500;
+  to   { transform: translateX(100%); }
 }
