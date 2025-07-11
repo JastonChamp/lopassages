@@ -181,8 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.speechSynthesis.speak(utter);
   });
 
-  // Speed button
-  document.getElementById('speed-btn').addEventListener('click', adjustSpeed);
+  // Speed button with touch support
+  speedBtn.addEventListener('click', adjustSpeed);
+  speedBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Prevent default touch behavior
+    adjustSpeed();
+  }, { passive: false });
 
   // Prev/Next buttons
   document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
