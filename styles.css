@@ -1,19 +1,54 @@
 /* Body styles */
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f0f0;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  background: linear-gradient(to bottom, #ffcccb, #87ceeb);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Game container */
+#game-container {
+  text-align: center;
+  max-width: 900px;
+  width: 100%;
+}
+
+/* Title styles */
+.title {
+  font-size: 2.5em;
+  color: #ff4500;
+  text-shadow: 2px 2px #ffd700;
+  margin-bottom: 10px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-20px); }
+  60% { transform: translateY(-10px); }
+}
+
+/* Story progress */
+#story-progress {
+  font-size: 1.2em;
+  color: #ff69b4;
+  margin-bottom: 10px;
 }
 
 /* Book container */
 #book {
   position: relative;
   width: 100%;
-  height: 600px;
+  height: 650px;
   overflow: hidden;
-  background-color: white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  margin: 20px auto;
-  max-width: 800px;
+  background: url('https://www.transparenttextures.com/patterns/rice-paper.png'), #fffacd;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 10px;
 }
 
 /* Page styles */
@@ -21,55 +56,79 @@ body {
   position: absolute;
   width: 100%;
   padding: 20px;
-  transition: transform 0.5s;
+  transition: transform 0.5s ease-in-out;
+  background: white;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Title styles */
 #passage-title {
-  font-size: 24px;
+  font-size: 2em;
+  color: #ff4500;
   text-align: center;
+  margin-bottom: 10px;
 }
 
 /* Info styles */
 #passage-info {
   text-align: center;
-  font-size: 14px;
-  color: #666;
+  font-size: 1.1em;
+  color: #4682b4;
+  margin-bottom: 15px;
 }
 
 /* Text styles */
 #passage-text {
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 1.3em;
+  line-height: 1.6;
+  color: #333;
 }
 
 /* Image styles */
 #passage-image {
   display: block;
-  margin: 20px auto;
-  max-width: 300px;
+  margin: 15px auto;
+  max-width: 350px;
+  border: 5px solid #ffd700;
+  border-radius: 10px;
+  animation: bounceImage 3s infinite;
+}
+
+@keyframes bounceImage {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 /* Controls styles */
 #controls {
-  text-align: center;
-  margin-top: 20px;
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
 /* Button styles */
 button {
-  padding: 15px 30px;
-  font-size: 18px;
-  margin: 0 10px;
-  background-color: #4CAF50;
+  padding: 15px 25px;
+  font-size: 1.2em;
+  background: linear-gradient(to right, #ff69b4, #ff4500);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 15px;
   cursor: pointer;
+  transition: transform 0.3s, background 0.3s;
+}
+
+button:hover {
+  transform: scale(1.1);
+  background: linear-gradient(to right, #ff4500, #ff69b4);
 }
 
 button:disabled {
-  background-color: #ccc;
+  background: #ccc;
+  cursor: not-allowed;
+  transform: scale(1);
 }
 
 /* Word styles */
@@ -78,19 +137,57 @@ button:disabled {
 }
 
 .word.speaking {
-  background-color: yellow;
+  background: #ffff00;
+  animation: glow 1s infinite alternate;
+}
+
+@keyframes glow {
+  from { background: #ffff00; }
+  to { background: #ffe600; }
 }
 
 /* Highlight styles */
 .highlight {
-  color: red;
+  color: #ff0000;
+  font-weight: bold;
 }
 
 /* Slide animations */
 .slide-left {
   transform: translateX(-100%);
+  animation: slideOutLeft 0.5s ease-out;
 }
 
 .slide-right {
   transform: translateX(100%);
+  animation: slideOutRight 0.5s ease-out;
+}
+
+@keyframes slideOutLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+/* Star button animation */
+#star-btn:enabled {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Star counter */
+#star-counter {
+  font-size: 1.2em;
+  color: #ffd700;
+  margin-top: 10px;
+  text-shadow: 1px 1px #ff4500;
 }
