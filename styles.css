@@ -222,8 +222,8 @@ body {
 }
 
 button {
-  width: 80px;
-  height: 80px;
+  width: 90px; /* Increased for better touch target */
+  height: 90px; /* Increased for better touch target */
   font-size: 1.2em;
   background: linear-gradient(45deg, #ff69b4, #ff4500);
   color: white;
@@ -231,6 +231,8 @@ button {
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.3s;
+  padding: 5px; /* Added padding for touch area */
+  touch-action: manipulation; /* Improves touch responsiveness */
 }
 
 button:enabled:hover {
@@ -336,8 +338,8 @@ button:disabled {
     height: 60px;
   }
   button {
-    width: 60px;
-    height: 60px;
+    width: 70px; /* Adjusted for mobile */
+    height: 70px; /* Adjusted for mobile */
     font-size: 1em;
   }
   #passage-title {
