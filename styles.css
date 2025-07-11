@@ -26,6 +26,11 @@ body {
   box-shadow: 0 0 20px rgba(0,0,0,0.2);
 }
 
+.header-image {
+  width: 100%;
+  height: auto;
+}
+
 /* Title bounce */
 .title {
   font-size: 2.8em;
@@ -104,7 +109,9 @@ body {
   font-size: 2em;
   color: #ff4500;
   text-align: left;
-  margin-bottom: 10px;
+padding-bottom: 10px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #ffd700;
 }
 
 #passage-info {
@@ -120,6 +127,9 @@ body {
   line-height: 1.8;
   color: #333;
   text-align: left;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #ffd700;
 }
 
 #passage-image {
@@ -148,19 +158,35 @@ body {
 }
 
 button {
-  width: 60px;
-  height: 60px;
-  font-size: 1.5em;
+ width: 80px;
+  height: 80px;
+  font-size: 1.2em;
   background: linear-gradient(45deg, #ff69b4, #ff4500);
   color: white;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.2s;
+ transition: transform 0.3s;
 }
 
 button:enabled:hover {
-  transform: scale(1.2);
+ transform: scale(1.1);
+}
+
+/* Loading spinner */
+.loader {
+  border: 16px solid #f3f3f3;
+  border-top: 16px solid #3498db;
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: spin 2s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 button:disabled {
