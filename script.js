@@ -1,11 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
   let passages = [],
       currentIndex = 0,
-      wordRanges = [],
+      wordRanges = [], // Global, but reset per passage
       currentSpeakingSpan = null,
       stars = 0;
 
-  const clapSound  = document.getElementById('clap-sound'),
+  const clapSound = document.getElementById('clap-sound'),
         cheerSound = document.getElementById('cheer-sound');
 
   // Load the stories JSON
@@ -27,19 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   // Render a passage by index
-function showPassage(i, container = document.getElementById('page')) {
+  function showPassage(i, container = document.getElementById('page')) {
     currentIndex = i;
-    const p  = passages[i];
+    const p = passages[i];
     const pg = container;
+
+    // Reset wordRanges for the new passage
+    wordRanges = [];
 
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
-      <p id="passage-info">Story <span>${i+1}</span> / ${passages.length}</p>
+      <p id="passage-info">Story <span>${i + 1}</span> / ${passages.length}</p>
       <div id="passage-text">${p.text}</div>
-   <img id="passage-image" src="${p.image}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">
-    `; // Fixed syntax error in onerror attribute
+      <img id="passage-image" src="${p.image}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">
+    `;
 
-    const textDiv = document.getElementById('passage-text');
+    const textDiv = pg.querySelector('#passage-text'); // Use pg to ensure correct context
     wrapWords(textDiv);
     buildRanges(textDiv);
 
@@ -53,7 +56,7 @@ function showPassage(i, container = document.getElementById('page')) {
     Array.from(container.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
         const parts = node.textContent.split(/(\s+)/),
-              frag  = document.createDocumentFragment();
+              frag = document.createDocumentFragment();
         parts.forEach(tok => {
           if (/^\s+$/.test(tok)) {
             frag.append(tok);
@@ -65,7 +68,7 @@ function showPassage(i, container = document.getElementById('page')) {
           }
         });
         container.replaceChild(frag, node);
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
         wrapWords(node);
       }
     });
@@ -74,7 +77,7 @@ function showPassage(i, container = document.getElementById('page')) {
   // Build character-index ranges for speech syncing
   function buildRanges(div) {
     let cumulative = 0;
-    wordRanges = [];
+    wordRanges = []; // Ensure ranges are rebuilt
     Array.from(div.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
         cumulative += node.textContent.length;
