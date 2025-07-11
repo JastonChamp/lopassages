@@ -188,6 +188,11 @@ button:disabled {
   font-weight: bold;
 }
 
+.word.speaking {
+  background: rgba(255,255,0,0.3);
+  text-decoration: underline;
+}
+
 .word.speaking .highlight {
   background: rgba(255,255,0,0.7);
   animation: glow 1s infinite alternate;
