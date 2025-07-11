@@ -6,7 +6,7 @@
 
 /* Body & container */
 body {
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+font-family: 'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive, sans-serif;
   background: #fff url('https://www.transparenttextures.com/patterns/polka-dots.png');
   margin: 0;
   padding: 0;
@@ -43,7 +43,7 @@ body {
 }
 
 .banner-title {
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+font-family: 'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive, sans-serif;
   font-size: 2.5em;
   color: #FFD700;
   text-shadow: 2px 2px 4px #000;
@@ -339,5 +339,11 @@ button:disabled {
     width: 60px;
     height: 60px;
     font-size: 1em;
+  }
+  #passage-title {
+    font-size: 1.8em;
+  }
+  #passage-text {
+    font-size: 1.6em;
   }
 }
