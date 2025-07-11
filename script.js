@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
       wordRanges = [], // Global, but reset per passage
       currentSpeakingSpan = null,
       stars = 0,
-      currentSpeed = 0.8; // Default speed
+      currentSpeed = 0.6; // Default to "Slow" for 4-5-year-olds
 
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
@@ -135,8 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Adjust reading speed
   function adjustSpeed() {
-    const speeds = [0.5, 0.8, 1.2]; // Slow, Normal, Fast
-    const labels = ['Slow', 'Normal', 'Fast'];
+    const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
+    const labels = ['Very Slow', 'Slow', 'Normal', 'Fast'];
     const currentIndex = speeds.indexOf(currentSpeed);
     const nextIndex = (currentIndex + 1) % speeds.length;
     currentSpeed = speeds[nextIndex];
