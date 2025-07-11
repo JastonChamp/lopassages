@@ -1,11 +1,12 @@
 // Global variables
-let passages = [];
-let currentPassageIndex = 0;
-let wordRanges = [];
-let currentSpeakingSpan = null;
-let starsEarned = 0;
-const clapSound = document.getElementById('clap-sound');
-const cheerSound = document.getElementById('cheer-sound');
+let passages = [],
+    currentPassageIndex = 0,
+    wordRanges = [],
+    currentSpeakingSpan = null,
+    starsEarned = 0;
+
+const clapSound  = document.getElementById('clap-sound'),
+      cheerSound = document.getElementById('cheer-sound');
 
 // Load passages from JSON
 fetch('passages.json')
@@ -15,133 +16,119 @@ fetch('passages.json')
   })
   .then(data => {
     passages = data;
-    if (passages.length === 0) throw new Error('No stories found');
+    if (!passages.length) throw new Error('No stories available');
     document.getElementById('total-stories').textContent = passages.length;
     document.documentElement.style.setProperty('--total', passages.length);
-    displayPassage(currentPassageIndex);
+    displayPassage(0);
     updateNavigationButtons();
   })
   .catch(error => {
-    console.error('Error loading stories:', error);
-    document.getElementById('page').innerHTML = '<p>Oops! Stories didn’t load. Try again!</p>';
+    console.error(error);
+    document.getElementById('page').textContent = 'Oops! Stories didn’t load.';
   });
 
-// Function to display a passage
+// Display a passage by index
 function displayPassage(index) {
-  const passage = passages[index];
-  const page = document.getElementById('page');
+  currentPassageIndex = index;
+  const p = passages[index],
+        page = document.getElementById('page');
+
   page.innerHTML = `
-    <h1 id="passage-title">${passage.title}</h1>
-    <p id="passage-info">Story <span class='highlight'>${index + 1}</span> / ${passages.length}</p>
-    <div id="passage-text">${highlightVowels(passage.text)}</div>
-    <img id="passage-image" src="${passage.image}" alt="Story Image">
+    <h1 id="passage-title">${p.title}</h1>
+    <p id="passage-info">
+      Story <span class="highlight">${index + 1}</span> / ${passages.length}
+    </p>
+    <div id="passage-text">${highlightVowels(p.text)}</div>
+    <img id="passage-image" src="${p.image}" alt="Story Image">
   `;
-  const passageTextDiv = document.getElementById('passage-text');
-  wrapWords(passageTextDiv);
-  setupWordRanges(passageTextDiv);
+
+  wrapWords(document.getElementById('passage-text'));
+  setupWordRanges(document.getElementById('passage-text'));
+
   document.getElementById('current-story').textContent = index + 1;
   document.documentElement.style.setProperty('--current', index + 1);
-  updateStarButton();
+  updateNavigationButtons();
 }
 
-// Function to highlight only vowels
+// Wrap only vowels in <span class="highlight">
 function highlightVowels(text) {
-  const vowelRegex = /[aeiou]/gi;
-  return text.replace(vowelRegex, match => `<span class='highlight'>${match}</span>`);
+  return text.replace(/[aeiou]/gi, v => `<span class="highlight">${v}</span>`);
 }
 
-// Function to wrap words in spans for highlighting
+// Wrap each word in a span for read-aloud highlighting
 function wrapWords(container) {
   Array.from(container.childNodes).forEach(node => {
     if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent;
-      const words = text.split(/\s+/).filter(word => word);
-      const fragment = document.createDocumentFragment();
-      words.forEach((word, index) => {
-        const span = document.createElement('span');
-        span.className = 'word';
-        span.innerHTML = word; // Preserve existing <span class='highlight'> tags
-        fragment.appendChild(span);
-        if (index < words.length - 1) fragment.appendChild(document.createTextNode(' '));
+      const words   = node.textContent.split(/(\s+)/),
+            frag    = document.createDocumentFragment();
+      words.forEach(w => {
+        if (/^\s+$/.test(w)) {
+          frag.append(w);
+        } else {
+          const span = document.createElement('span');
+          span.className = 'word';
+          span.innerHTML = w;  // keeps the <span class="highlight"> tags intact
+          frag.append(span);
+        }
       });
-      container.replaceChild(fragment, node);
+      container.replaceChild(frag, node);
     }
   });
 }
 
-// Function to setup word ranges for audio syncing
-function setupWordRanges(passageTextDiv) {
-  const wordSpans = Array.from(passageTextDiv.querySelectorAll('.word'));
+// Build character-index ranges for each word span
+function setupWordRanges(textDiv) {
   let cumulative = 0;
   wordRanges = [];
-  Array.from(passageTextDiv.childNodes).forEach(node => {
+  Array.from(textDiv.childNodes).forEach(node => {
     if (node.nodeType === Node.TEXT_NODE) {
       cumulative += node.textContent.length;
     } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('word')) {
-      const text = node.innerHTML;
-      const start = cumulative;
-      const end = start + text.length - 1;
-      wordRanges.push({ span: node, start, end });
-      cumulative += text.length;
+      const len = node.textContent.length;
+      wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
+      cumulative += len;
     }
   });
 }
 
-// Function to update navigation buttons
+// Enable/disable nav & star buttons
 function updateNavigationButtons() {
   document.getElementById('prev-btn').disabled = currentPassageIndex === 0;
   document.getElementById('next-btn').disabled = currentPassageIndex === passages.length - 1;
-  updateStarButton();
+  document.getElementById('star-btn').disabled = currentPassageIndex === 0 || starsEarned >= passages.length;
 }
 
-// Function to update star button
-function updateStarButton() {
-  const starBtn = document.getElementById('star-btn');
-  starBtn.disabled = currentPassageIndex === 0 || starsEarned >= passages.length;
-}
-
-// Function to switch to a new passage with animation
+// Animate page flip and switch passage
 function switchToPassage(newIndex, direction) {
   if (newIndex < 0 || newIndex >= passages.length) return;
   clapSound.play();
-  const oldPage = document.getElementById('page');
-  const newPage = document.createElement('div');
+
+  const oldPage = document.getElementById('page'),
+        newPage = oldPage.cloneNode(false);
+
   newPage.id = 'page';
-  newPage.className = direction === 'next' ? 'slide-right' : 'slide-left';
-  newPage.innerHTML = `
-    <h1 id="passage-title">${passages[newIndex].title}</h1>
-    <p id="passage-info">Story <span class='highlight'>${newIndex + 1}</span> / ${passages.length}</p>
-    <div id="passage-text">${highlightVowels(passages[newIndex].text)}</div>
-    <img id="passage-image" src="${passages[newIndex].image}" alt="Story Image">
-  `;
-  const newPassageTextDiv = newPage.querySelector('#passage-text');
-  wrapWords(newPassageTextDiv);
-  document.getElementById('book').appendChild(newPage);
-  newPage.offsetWidth; // Trigger reflow
-  oldPage.classList.add(direction === 'next' ? 'slide-left' : 'slide-right');
-  newPage.classList.remove(direction === 'next' ? 'slide-right' : 'slide-left');
+  newPage.classList.add(direction === 'next' ? 'slide-right' : 'slide-left');
+  newPage.innerHTML = oldPage.innerHTML;
+  document.getElementById('book').append(newPage);
+
+  requestAnimationFrame(() => {
+    oldPage.classList.add(direction === 'next' ? 'slide-left' : 'slide-right');
+    newPage.classList.remove(direction === 'next' ? 'slide-right' : 'slide-left');
+  });
+
   setTimeout(() => {
     oldPage.remove();
-    currentPassageIndex = newIndex;
-    updateNavigationButtons();
-    setupWordRanges(newPassageTextDiv);
-    document.getElementById('current-story').textContent = currentPassageIndex + 1;
-    document.documentElement.style.setProperty('--current', currentPassageIndex + 1);
+    displayPassage(newIndex);
   }, 500);
 }
 
-// Function to earn a star
+// Award a star and trigger confetti
 function earnStar() {
   if (currentPassageIndex > 0 && starsEarned < passages.length) {
     starsEarned++;
     document.getElementById('star-count').textContent = starsEarned;
     cheerSound.play();
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-    alert('You did it! 🎉 Earned a star!');
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     document.getElementById('star-btn').disabled = true;
     if (starsEarned === passages.length) {
       alert('Wow! You read all stories! You’re a superstar! 🌟');
@@ -149,54 +136,42 @@ function earnStar() {
   }
 }
 
-// Event listener for play button
+// Read-aloud button
 document.getElementById('play-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) {
-    currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
-  }
-  const text = document.getElementById('passage-text').textContent;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.8; // Slowed down from default 1.0 to 0.8 for better comprehension
-  utterance.onboundary = (event) => {
+  if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+
+  const text = document.getElementById('passage-text').textContent,
+        u    = new SpeechSynthesisUtterance(text);
+
+  u.rate = 0.8;
+  u.onboundary = event => {
     if (event.name === 'word') {
-      if (currentSpeakingSpan) {
-        currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
-      }
-      const charIndex = event.charIndex;
-      const range = wordRanges.find(r => r.start <= charIndex && charIndex <= r.end);
-      if (range) {
-        currentSpeakingSpan = range.span;
-        currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.add('speaking'));
+      currentSpeakingSpan?.classList.remove('speaking');
+      const r = wordRanges.find(r => event.charIndex >= r.start && event.charIndex <= r.end);
+      if (r) {
+        currentSpeakingSpan = r.span;
+        r.span.classList.add('speaking');
       }
     }
   };
-  utterance.onend = () => {
-    if (currentSpeakingSpan) {
-      currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
-    }
-    currentSpeakingSpan = null;
-  };
-  window.speechSynthesis.speak(utterance);
+  u.onend = () => currentSpeakingSpan?.classList.remove('speaking');
+
+  window.speechSynthesis.speak(u);
 });
 
-// Event listeners for navigation buttons
+// Prev/Next event handlers
 document.getElementById('prev-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) {
-    currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
-  }
-  currentSpeakingSpan = null;
+  currentSpeakingSpan?.classList.remove('speaking');
   switchToPassage(currentPassageIndex - 1, 'prev');
 });
 
 document.getElementById('next-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) {
-    currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
-  }
-  currentSpeakingSpan = null;
+  currentSpeakingSpan?.classList.remove('speaking');
   switchToPassage(currentPassageIndex + 1, 'next');
 });
 
+// Star button
 document.getElementById('star-btn').addEventListener('click', earnStar);
