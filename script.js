@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentSpeakingSpan = null,
       stars = 0;
 
-  const clapSound = document.getElementById('clap-sound'),
+const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound');
 
   // Load the stories JSON
@@ -99,23 +99,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // Flip pages with animation
   function flipTo(idx, dir) {
     if (idx < 0 || idx >= passages.length) return;
-    clapSound.play();
+   whooshSound.play();
 
-    const oldPg = document.getElementById('page'),
-          newPg = oldPg.cloneNode(false);
-    newPg.id = 'page';
-    newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
+   const oldPg = document.getElementById('page');
+    oldPg.innerHTML = '<div class="loader"></div>';
 
-    showPassage(idx, newPg);
-    document.getElementById('book').appendChild(newPg);
+    setTimeout(() => {
+      const newPg = oldPg.cloneNode(false);
+      newPg.id = 'page';
+      newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
+  showPassage(idx, newPg);
+      document.getElementById('book').appendChild(newPg);
 
-    requestAnimationFrame(() => {
-      oldPg.classList.add(dir === 'next' ? 'slide-left' : 'slide-right');
-      newPg.classList.remove(dir === 'next' ? 'slide-right' : 'slide-left');
-    });
-
-    setTimeout(() => oldPg.remove(), 500);
-  }
+      requestAnimationFrame(() => {
+        oldPg.classList.add(dir === 'next' ? 'slide-left' : 'slide-right');
+        newPg.classList.remove(dir === 'next' ? 'slide-right' : 'slide-left');
+      });
+   setTimeout(() => oldPg.remove(), 500);
+    }, 300);
 
   // Earn a star
   document.getElementById('star-btn').addEventListener('click', () => {
