@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentSpeakingSpan = null,
       stars = 0;
 
-const whooshSound = document.getElementById('whoosh-sound'),
+  const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound');
 
   // Load the stories JSON
@@ -99,24 +99,26 @@ const whooshSound = document.getElementById('whoosh-sound'),
   // Flip pages with animation
   function flipTo(idx, dir) {
     if (idx < 0 || idx >= passages.length) return;
-   whooshSound.play();
+    whooshSound.play();
 
-   const oldPg = document.getElementById('page');
+    const oldPg = document.getElementById('page');
     oldPg.innerHTML = '<div class="loader"></div>';
 
     setTimeout(() => {
       const newPg = oldPg.cloneNode(false);
       newPg.id = 'page';
       newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
-  showPassage(idx, newPg);
+      showPassage(idx, newPg);
       document.getElementById('book').appendChild(newPg);
 
       requestAnimationFrame(() => {
         oldPg.classList.add(dir === 'next' ? 'slide-left' : 'slide-right');
         newPg.classList.remove(dir === 'next' ? 'slide-right' : 'slide-left');
       });
-   setTimeout(() => oldPg.remove(), 500);
+
+      setTimeout(() => oldPg.remove(), 500);
     }, 300);
+  }
 
   // Earn a star
   document.getElementById('star-btn').addEventListener('click', () => {
@@ -169,4 +171,4 @@ const whooshSound = document.getElementById('whoosh-sound'),
   // Prev/Next buttons
   document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn').addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
-};
+});
