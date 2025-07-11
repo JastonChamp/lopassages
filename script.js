@@ -3,16 +3,27 @@ let passages = [];
 let currentPassageIndex = 0;
 let wordRanges = [];
 let currentSpeakingSpan = null;
+let starsEarned = 0;
+const clapSound = document.getElementById('clap-sound');
+const cheerSound = document.getElementById('cheer-sound');
 
 // Load passages from JSON
 fetch('passages.json')
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) throw new Error('Failed to load stories');
+    return response.json();
+  })
   .then(data => {
     passages = data;
-    displayPassage(0);
+    if (passages.length === 0) throw new Error('No stories found');
+    document.getElementById('total-stories').textContent = passages.length;
+    displayPassage(currentPassageIndex);
     updateNavigationButtons();
   })
-  .catch(error => console.error('Error loading passages:', error));
+  .catch(error => {
+    console.error('Error loading stories:', error);
+    document.getElementById('page').innerHTML = '<p>Oops! Stories didn’t load. Try again!</p>';
+  });
 
 // Function to display a passage
 function displayPassage(index) {
@@ -20,13 +31,15 @@ function displayPassage(index) {
   const page = document.getElementById('page');
   page.innerHTML = `
     <h1 id="passage-title">${passage.title}</h1>
-    <p id="passage-info">Passage ${index + 1} of ${passages.length}</p>
+    <p id="passage-info">Story <span class='highlight'>${index + 1}</span> of ${passages.length}</p>
     <div id="passage-text">${passage.text}</div>
-    <img id="passage-image" src="${passage.image}" alt="Passage Image">
+    <img id="passage-image" src="${passage.image}" alt="Story Image">
   `;
   const passageTextDiv = document.getElementById('passage-text');
   wrapWords(passageTextDiv);
   setupWordRanges(passageTextDiv);
+  document.getElementById('current-story').textContent = index + 1;
+  updateStarButton();
 }
 
 // Function to wrap words in spans for highlighting
@@ -41,9 +54,7 @@ function wrapWords(container) {
         span.className = 'word';
         span.textContent = word;
         fragment.appendChild(span);
-        if (index < words.length - 1) {
-          fragment.appendChild(document.createTextNode(' '));
-        }
+        if (index < words.length - 1) fragment.appendChild(document.createTextNode(' '));
       });
       container.replaceChild(fragment, node);
     } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('highlight')) {
@@ -64,7 +75,7 @@ function setupWordRanges(passageTextDiv) {
       const text = node.textContent;
       const start = cumulative;
       const end = start + text.length - 1;
-      wordRanges.push({span: node, start, end});
+      wordRanges.push({ span: node, start, end });
       cumulative += text.length;
     }
   });
@@ -74,22 +85,28 @@ function setupWordRanges(passageTextDiv) {
 function updateNavigationButtons() {
   document.getElementById('prev-btn').disabled = currentPassageIndex === 0;
   document.getElementById('next-btn').disabled = currentPassageIndex === passages.length - 1;
+  updateStarButton();
+}
+
+// Function to update star button
+function updateStarButton() {
+  const starBtn = document.getElementById('star-btn');
+  starBtn.disabled = currentPassageIndex === 0 || starsEarned >= passages.length;
 }
 
 // Function to switch to a new passage with animation
 function switchToPassage(newIndex, direction) {
   if (newIndex < 0 || newIndex >= passages.length) return;
+  clapSound.play();
   const oldPage = document.getElementById('page');
   const newPage = document.createElement('div');
   newPage.id = 'page';
   newPage.className = direction === 'next' ? 'slide-right' : 'slide-left';
   newPage.innerHTML = `
     <h1 id="passage-title">${passages[newIndex].title}</h1>
-    <p id="passage-info">Passage ${newIndex + 1} of ${passages.length}</p>
+    <p id="passage-info">Story <span class='highlight'>${newIndex + 1}</span> of ${passages.length}</p>
     <div id="passage-text">${passages[newIndex].text}</div>
-    <img»
-
- id="passage-image" src="${passages[newIndex].image}" alt="Passage Image">
+    <img id="passage-image" src="${passages[newIndex].image}" alt="Story Image">
   `;
   const newPassageTextDiv = newPage.querySelector('#passage-text');
   wrapWords(newPassageTextDiv);
@@ -102,19 +119,33 @@ function switchToPassage(newIndex, direction) {
     currentPassageIndex = newIndex;
     updateNavigationButtons();
     setupWordRanges(newPassageTextDiv);
+    document.getElementById('current-story').textContent = currentPassageIndex + 1;
   }, 500);
+}
+
+// Function to earn a star
+function earnStar() {
+  if (currentPassageIndex > 0 && starsEarned < passages.length) {
+    starsEarned++;
+    document.getElementById('star-count').textContent = starsEarned;
+    cheerSound.play();
+    document.getElementById('star-btn').disabled = true;
+    alert('Yay! You earned a star! 🎉 Keep reading for more!');
+    if (starsEarned === passages.length) {
+      alert('Wow! You read all stories! You’re a superstar! 🌟');
+    }
+  }
 }
 
 // Event listener for play button
 document.getElementById('play-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
+  if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
   const text = document.getElementById('passage-text').textContent;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.onboundary = (event) => {
     if (event.name === 'word') {
-      if (currentSpeakingSpan) {
-        currentSpeakingSpan.classList.remove('speaking');
-      }
+      if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
       const charIndex = event.charIndex;
       const range = wordRanges.find(r => r.start <= charIndex && charIndex <= r.end);
       if (range) {
@@ -124,41 +155,25 @@ document.getElementById('play-btn').addEventListener('click', () => {
     }
   };
   utterance.onend = () => {
-    if (currentSpeakingSpan) {
-      currentSpeakingSpan.classList.remove('speaking');
-      currentSpeakingSpan = null;
-    }
+    if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+    currentSpeakingSpan = null;
   };
   window.speechSynthesis.speak(utterance);
 });
 
-// Event listener for previous button
+// Event listeners for navigation buttons
 document.getElementById('prev-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) {
-    currentSpeakingSpan.classList.remove('speaking');
-    currentSpeakingSpan = null;
-  }
+  if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+  currentSpeakingSpan = null;
   switchToPassage(currentPassageIndex - 1, 'prev');
 });
 
-// Event listener for next button
 document.getElementById('next-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) {
-    currentSpeakingSpan.classList.remove('speaking');
-    currentSpeakingSpan = null;
-  }
-  switch ФинансРange: self (self) => {
-    return self.__proto__.__proto__ = null;
-    return self.__synthetic = true;
-    return self.__proto__ = null;
-    return self.__proto__ = null;
-    return self.__proto__ = null;
-    return self.__proto.__proto__ = null;
-    return self.__proto.__proto__ = null;
-    return self.__proto.__proto__ = null;
-    return self.__js = true;
-    return self.__proto.__proto__ = null;
-    switchToPassage(currentPassage1 + 1, 'next');
+  if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+  currentSpeakingSpan = null;
+  switchToPassage(currentPassageIndex + 1, 'next');
 });
+
+document.getElementById('star-btn').addEventListener('click', earnStar);
