@@ -27,16 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   // Render a passage by index
-  function showPassage(i) {
+function showPassage(i, container = document.getElementById('page')) {
     currentIndex = i;
     const p  = passages[i];
-    const pg = document.getElementById('page');
+    const pg = container;
 
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
       <p id="passage-info">Story <span>${i+1}</span> / ${passages.length}</p>
       <div id="passage-text">${p.text}</div>
-      <img id="passage-image" src="${p.image}" alt="" onerror="this.style.display='none';">
+   <img id="passage-image" src="${p.image}" alt="${p.title}" onerror="this.style.display='none';">
     `; // Fixed syntax error in onerror attribute
 
     const textDiv = document.getElementById('passage-text');
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     newPg.id = 'page';
     newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
 
-    showPassage(idx);
+    showPassage(idx, newPg);
     document.getElementById('book').appendChild(newPg);
 
     requestAnimationFrame(() => {
