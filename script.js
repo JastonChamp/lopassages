@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
         cheerSound = document.getElementById('cheer-sound'),
         speedBtn = document.getElementById('speed-btn');
 
+  // Initialize button text with default speed
+  const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
+  const labels = ['Very Slow', 'Normal', 'Fast']; // Simplified labels for testing
+  speedBtn.textContent = `Speed: ${labels[speeds.indexOf(currentSpeed)]}`;
+  console.log(`Initial speed set to: ${currentSpeed}`); // Debug initial state
+
   // Load the stories JSON
   fetch('passages.json')
     .then(response => {
@@ -135,13 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Adjust reading speed
   function adjustSpeed() {
-    const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
-    const labels = ['Very Slow', 'Slow', 'Normal', 'Fast'];
     const currentIndex = speeds.indexOf(currentSpeed);
     const nextIndex = (currentIndex + 1) % speeds.length;
     currentSpeed = speeds[nextIndex];
     speedBtn.textContent = `Speed: ${labels[nextIndex]}`;
-    console.log(`Speed set to: ${currentSpeed}`); // Debug log
+    console.log(`Speed adjusted to: ${currentSpeed} (${labels[nextIndex]})`); // Enhanced debug
   }
 
   // Read-aloud with word highlighting
@@ -182,11 +186,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Speed button with enhanced touch support
-  speedBtn.addEventListener('click', adjustSpeed);
+  speedBtn.addEventListener('click', (e) => {
+    e.preventDefault(); // Prevent default click behavior
+    console.log('Click event fired');
+    adjustSpeed();
+  });
   speedBtn.addEventListener('touchstart', (e) => {
     e.preventDefault(); // Prevent default touch behavior
+    console.log('Touchstart event fired');
     adjustSpeed();
     e.stopPropagation(); // Prevent multiple triggers
+  }, { passive: false });
+  speedBtn.addEventListener('touchend', (e) => {
+    e.preventDefault(); // Prevent default touchend behavior
+    console.log('Touchend event fired');
+    adjustSpeed();
   }, { passive: false });
 
   // Prev/Next buttons
