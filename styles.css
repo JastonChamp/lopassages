@@ -82,7 +82,7 @@ body {
   background: #fffacd;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: auto; /* Allow scrolling if content overflows */
   margin-bottom: 15px;
 }
 
@@ -200,10 +200,12 @@ button:disabled {
 /* Slide animations */
 .slide-left {
   transform: translateX(-100%);
+  animation: slideOutLeft 0.5s ease-out forwards;
 }
 
 .slide-right {
   transform: translateX(100%);
+  animation: slideOutRight 0.5s ease-out forwards;
 }
 
 @keyframes slideOutLeft {
