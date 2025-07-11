@@ -17,6 +17,7 @@ fetch('passages.json')
     passages = data;
     if (passages.length === 0) throw new Error('No stories found');
     document.getElementById('total-stories').textContent = passages.length;
+    document.documentElement.style.setProperty('--total', passages.length);
     displayPassage(currentPassageIndex);
     updateNavigationButtons();
   })
@@ -31,15 +32,22 @@ function displayPassage(index) {
   const page = document.getElementById('page');
   page.innerHTML = `
     <h1 id="passage-title">${passage.title}</h1>
-    <p id="passage-info">Story <span class='highlight'>${index + 1}</span> of ${passages.length}</p>
-    <div id="passage-text">${passage.text}</div>
+    <p id="passage-info">Story <span class='highlight'>${index + 1}</span> / ${passages.length}</p>
+    <div id="passage-text">${highlightVowels(passage.text)}</div>
     <img id="passage-image" src="${passage.image}" alt="Story Image">
   `;
   const passageTextDiv = document.getElementById('passage-text');
   wrapWords(passageTextDiv);
   setupWordRanges(passageTextDiv);
   document.getElementById('current-story').textContent = index + 1;
+  document.documentElement.style.setProperty('--current', index + 1);
   updateStarButton();
+}
+
+// Function to highlight only vowels
+function highlightVowels(text) {
+  const vowelRegex = /[aeiou]/gi;
+  return text.replace(vowelRegex, match => `<span class='highlight'>${match}</span>`);
 }
 
 // Function to wrap words in spans for highlighting
@@ -52,13 +60,11 @@ function wrapWords(container) {
       words.forEach((word, index) => {
         const span = document.createElement('span');
         span.className = 'word';
-        span.textContent = word;
+        span.innerHTML = word; // Preserve existing <span class='highlight'> tags
         fragment.appendChild(span);
         if (index < words.length - 1) fragment.appendChild(document.createTextNode(' '));
       });
       container.replaceChild(fragment, node);
-    } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('highlight')) {
-      node.classList.add('word');
     }
   });
 }
@@ -72,7 +78,7 @@ function setupWordRanges(passageTextDiv) {
     if (node.nodeType === Node.TEXT_NODE) {
       cumulative += node.textContent.length;
     } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('word')) {
-      const text = node.textContent;
+      const text = node.innerHTML;
       const start = cumulative;
       const end = start + text.length - 1;
       wordRanges.push({ span: node, start, end });
@@ -104,8 +110,8 @@ function switchToPassage(newIndex, direction) {
   newPage.className = direction === 'next' ? 'slide-right' : 'slide-left';
   newPage.innerHTML = `
     <h1 id="passage-title">${passages[newIndex].title}</h1>
-    <p id="passage-info">Story <span class='highlight'>${newIndex + 1}</span> of ${passages.length}</p>
-    <div id="passage-text">${passages[newIndex].text}</div>
+    <p id="passage-info">Story <span class='highlight'>${newIndex + 1}</span> / ${passages.length}</p>
+    <div id="passage-text">${highlightVowels(passages[newIndex].text)}</div>
     <img id="passage-image" src="${passages[newIndex].image}" alt="Story Image">
   `;
   const newPassageTextDiv = newPage.querySelector('#passage-text');
@@ -120,6 +126,7 @@ function switchToPassage(newIndex, direction) {
     updateNavigationButtons();
     setupWordRanges(newPassageTextDiv);
     document.getElementById('current-story').textContent = currentPassageIndex + 1;
+    document.documentElement.style.setProperty('--current', currentPassageIndex + 1);
   }, 500);
 }
 
@@ -129,8 +136,13 @@ function earnStar() {
     starsEarned++;
     document.getElementById('star-count').textContent = starsEarned;
     cheerSound.play();
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    alert('You did it! 🎉 Earned a star!');
     document.getElementById('star-btn').disabled = true;
-    alert('Yay! You earned a star! 🎉 Keep reading for more!');
     if (starsEarned === passages.length) {
       alert('Wow! You read all stories! You’re a superstar! 🌟');
     }
@@ -140,22 +152,29 @@ function earnStar() {
 // Event listener for play button
 document.getElementById('play-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+  if (currentSpeakingSpan) {
+    currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
+  }
   const text = document.getElementById('passage-text').textContent;
   const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.8; // Slowed down from default 1.0 to 0.8 for better comprehension
   utterance.onboundary = (event) => {
     if (event.name === 'word') {
-      if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+      if (currentSpeakingSpan) {
+        currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
+      }
       const charIndex = event.charIndex;
       const range = wordRanges.find(r => r.start <= charIndex && charIndex <= r.end);
       if (range) {
         currentSpeakingSpan = range.span;
-        currentSpeakingSpan.classList.add('speaking');
+        currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.add('speaking'));
       }
     }
   };
   utterance.onend = () => {
-    if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+    if (currentSpeakingSpan) {
+      currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
+    }
     currentSpeakingSpan = null;
   };
   window.speechSynthesis.speak(utterance);
@@ -164,14 +183,18 @@ document.getElementById('play-btn').addEventListener('click', () => {
 // Event listeners for navigation buttons
 document.getElementById('prev-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+  if (currentSpeakingSpan) {
+    currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
+  }
   currentSpeakingSpan = null;
   switchToPassage(currentPassageIndex - 1, 'prev');
 });
 
 document.getElementById('next-btn').addEventListener('click', () => {
   window.speechSynthesis.cancel();
-  if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+  if (currentSpeakingSpan) {
+    currentSpeakingSpan.querySelectorAll('.highlight').forEach(span => span.classList.remove('speaking'));
+  }
   currentSpeakingSpan = null;
   switchToPassage(currentPassageIndex + 1, 'next');
 });
