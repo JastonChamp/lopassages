@@ -36,7 +36,7 @@ function showPassage(i, container = document.getElementById('page')) {
       <h1 id="passage-title">${p.title}</h1>
       <p id="passage-info">Story <span>${i+1}</span> / ${passages.length}</p>
       <div id="passage-text">${p.text}</div>
-   <img id="passage-image" src="${p.image}" alt="${p.title}" onerror="this.style.display='none';">
+   <img id="passage-image" src="${p.image}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">
     `; // Fixed syntax error in onerror attribute
 
     const textDiv = document.getElementById('passage-text');
@@ -65,6 +65,8 @@ function showPassage(i, container = document.getElementById('page')) {
           }
         });
         container.replaceChild(frag, node);
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+        wrapWords(node);
       }
     });
   }
