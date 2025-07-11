@@ -10,24 +10,41 @@
 <body>
   <div id="game-container">
     <h1 class="title">Fun Phonics Adventure! 🎉</h1>
+
     <div id="progress-container">
       <div id="progress-bar"></div>
       <div id="story-progress">
         Story <span id="current-story">1</span> / <span id="total-stories">13</span>
       </div>
     </div>
-    <div id="book"><div id="page"></div></div>
+
+    <div id="book">
+      <div id="page"></div>
+    </div>
+
     <div id="controls">
       <button id="prev-btn" disabled>⬅️</button>
       <button id="play-btn">🎵</button>
       <button id="next-btn" disabled>➡️</button>
       <button id="star-btn" disabled>⭐</button>
     </div>
-    <div id="star-counter">Stars: <span id="star-count">0</span></div>
+
+    <div id="star-counter">
+      Stars: <span id="star-count">0</span>
+    </div>
   </div>
-  <audio id="clap-sound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload></audio>
-  <audio id="cheer-sound" src="https://www.soundjay.com/human/cheer-01.mp3" preload></audio>
-  <noscript>Your browser does not support JavaScript or it is disabled!</noscript>
+
+  <audio id="clap-sound"
+         src="https://www.soundjay.com/buttons/beep-01a.mp3"
+         preload></audio>
+  <audio id="cheer-sound"
+         src="https://www.soundjay.com/human/cheer-01.mp3"
+         preload></audio>
+
+  <noscript>
+    Oops! This app needs JavaScript enabled to run.
+  </noscript>
+
   <script src="script.js"></script>
 </body>
 </html>
