@@ -24,7 +24,7 @@ body {
   padding: 20px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 15px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Title styles */
@@ -60,7 +60,8 @@ body {
 #progress-bar::after {
   content: '';
   position: absolute;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   height: 100%;
   background: linear-gradient(to right, #ff69b4, #ff4500);
   width: calc((var(--current) / var(--total)) * 100%);
@@ -177,6 +178,7 @@ button:disabled {
 .word {
   display: inline-block;
   padding: 0 2px;
+  position: relative;
 }
 
 .word.speaking .highlight {
@@ -186,7 +188,7 @@ button:disabled {
 
 @keyframes glow {
   from { box-shadow: 0 0 5px #fffacd; }
-  to   { box-shadow: 0 0 15px #fffacd; }
+  to { box-shadow: 0 0 15px #fffacd; }
 }
 
 /* Vowel highlight */
@@ -198,18 +200,18 @@ button:disabled {
 /* Slide animations */
 .slide-left {
   transform: translateX(-100%);
-  animation: slideOutLeft 0.5s ease-out forwards;
 }
+
 .slide-right {
   transform: translateX(100%);
-  animation: slideOutRight 0.5s ease-out forwards;
 }
 
 @keyframes slideOutLeft {
   from { transform: translateX(0); }
-  to   { transform: translateX(-100%); }
+  to { transform: translateX(-100%); }
 }
+
 @keyframes slideOutRight {
   from { transform: translateX(0); }
-  to   { transform: translateX(100%); }
+  to { transform: translateX(100%); }
 }
