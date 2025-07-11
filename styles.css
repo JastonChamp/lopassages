@@ -218,13 +218,3 @@ button:disabled {
   from { transform: translateX(0); }
   to   { transform: translateX(100%); }
 }
-
-/* Star button pulse */
-#star-btn:enabled {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.1); }
-}
