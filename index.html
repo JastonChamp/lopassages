@@ -3,24 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fun Phonics Adventure</title>
+  <title>Fun Phonics Adventure!</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
   <div id="game-container">
-    <h1 class="title">Fun Phonics Adventure!</h1>
-    <div id="story-progress">Story <span id="current-story">1</span> of <span id="total-stories">13</span></div>
+    <h1 class="title">Fun Phonics Adventure! 🎉</h1>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+      <div id="story-progress">Story <span id="current-story">1</span> / <span id="total-stories">13</span></div>
+    </div>
     <div id="book">
       <div id="page">
         <!-- Passage content will be loaded here -->
       </div>
     </div>
     <div id="controls">
-      <button id="prev-btn" disabled><i class="fas fa-arrow-left"></i> Back</button>
-      <button id="play-btn"><i class="fas fa-play"></i> Read Aloud!</button>
-      <button id="next-btn" disabled><i class="fas fa-arrow-right"></i> Next</button>
-      <button id="star-btn" disabled><i class="fas fa-star"></i> Earn Star!</button>
+      <button id="prev-btn" disabled>⬅️</button>
+      <button id="play-btn">🎵</button>
+      <button id="next-btn" disabled>➡️</button>
+      <button id="star-btn" disabled>⭐</button>
     </div>
     <div id="star-counter">Stars: <span id="star-count">0</span></div>
   </div>
