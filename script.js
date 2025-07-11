@@ -1,5 +1,3 @@
-Here’s the complete, intact `script.js` with all features preserved:
-
 ```javascript
 document.addEventListener('DOMContentLoaded', () => {
   let passages = [],
