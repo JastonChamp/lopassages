@@ -1,3 +1,4 @@
+```javascript
 document.addEventListener('DOMContentLoaded', () => {
   let passages = [],
       currentIndex = 0,
@@ -32,22 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const p  = passages[i];
     const pg = document.getElementById('page');
 
-    // <-- **Make sure this is a backtick string** -->
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
-      <p id="passage-info">
-        Story <span class="highlight">${i+1}</span> / ${passages.length}
-      </p>
+      <p id="passage-info">Story <span>${i+1}</span> / ${passages.length}</p>
       <div id="passage-text">${p.text}</div>
       <img id="passage-image"
            src="${p.image}"
-           alt="Story Image"
+           alt=""
            onerror="this.style.display='none'">
     `;
 
     const textDiv = document.getElementById('passage-text');
     wrapWords(textDiv);
-    highlightVowelsOnDOM(textDiv);
     buildRanges(textDiv);
 
     document.getElementById('current-story').textContent = i+1;
@@ -76,64 +73,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4) Highlight vowels inside each word-span
-  function highlightVowelsOnDOM(container) {
-    container.querySelectorAll('.word').forEach(span => {
-      const chars = span.textContent.split('');
-      span.innerHTML = chars.map(ch =>
-        /[aeiou]/i.test(ch)
-          ? `<span class="highlight">${ch}</span>`
-          : ch
-      ).join('');
-    });
-  }
-
-  // 5) Build character-index ranges for speech syncing
+  // 4) Build character-index ranges for speech syncing
   function buildRanges(div) {
     let cumulative = 0;
     wordRanges = [];
     Array.from(div.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
         cumulative += node.textContent.length;
-      } else if (
-        node.nodeType === Node.ELEMENT_NODE &&
-        node.classList.contains('word')
-      ) {
-        const length = node.textContent.length;
-        wordRanges.push({ span: node, start: cumulative, end: cumulative + length - 1 });
-        cumulative += length;
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('word')) {
+        const len = node.textContent.length;
+        wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
+        cumulative += len;
       }
     });
   }
 
-  // 6) Enable/disable buttons
+  // 5) Enable/disable Prev, Next, Star buttons
   function updateNavButtons() {
     document.getElementById('prev-btn').disabled = currentIndex === 0;
     document.getElementById('next-btn').disabled = currentIndex === passages.length - 1;
     document.getElementById('star-btn').disabled = currentIndex === 0 || stars >= passages.length;
   }
 
-  // 7) Flip pages with animation
-  function flipTo(index, direction) {
-    if (index < 0 || index >= passages.length) return;
+  // 6) Flip pages with animation
+  function flipTo(idx, dir) {
+    if (idx < 0 || idx >= passages.length) return;
     clapSound.play();
 
     const oldPg = document.getElementById('page'),
           newPg = oldPg.cloneNode(false);
     newPg.id = 'page';
-    newPg.classList.add(direction === 'next' ? 'slide-right' : 'slide-left');
+    newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
 
-    showPassage(index);
+    showPassage(idx);
     document.getElementById('book').appendChild(newPg);
 
     requestAnimationFrame(() => {
-      oldPg.classList.add(direction === 'next' ? 'slide-left' : 'slide-right');
-      newPg.classList.remove(direction === 'next' ? 'slide-right' : 'slide-left');
+      oldPg.classList.add(dir === 'next' ? 'slide-left' : 'slide-right');
+      newPg.classList.remove(dir === 'next' ? 'slide-right' : 'slide-left');
     });
+
     setTimeout(() => oldPg.remove(), 500);
   }
 
-  // 8) Earn a star
+  // 7) Earn a star
   document.getElementById('star-btn').addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
@@ -144,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 9) Read-aloud with word highlighting
+  // 8) Read-aloud with word highlighting
   document.getElementById('play-btn').addEventListener('click', () => {
     window.speechSynthesis.cancel();
     if (currentSpeakingSpan) {
@@ -161,7 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentSpeakingSpan) {
           currentSpeakingSpan.classList.remove('speaking');
         }
-        const range = wordRanges.find(r => event.charIndex >= r.start && event.charIndex <= r.end);
+        const range = wordRanges.find(r =>
+          event.charIndex >= r.start && event.charIndex <= r.end
+        );
         if (range) {
           range.span.classList.add('speaking');
           currentSpeakingSpan = range.span;
@@ -179,11 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.speechSynthesis.speak(utter);
   });
 
-  // 10) Prev/Next
-  document.getElementById('prev-btn').addEventListener('click', () =>
-    flipTo(currentIndex - 1, 'prev')
-  );
-  document.getElementById('next-btn').addEventListener('click', () =>
-    flipTo(currentIndex + 1, 'next')
-  );
+  // 9) Prev/Next buttons
+  document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
+  document.getElementById('next-btn').addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
 });
+```
