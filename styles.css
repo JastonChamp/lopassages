@@ -1,7 +1,7 @@
 /* Body styles */
 body {
   font-family: 'Comic Sans MS', cursive, sans-serif;
-  background: linear-gradient(to bottom, #ffcccb, #87ceeb);
+  background: #fff url('https://www.transparenttextures.com/patterns/polka-dots.png');
   margin: 0;
   padding: 0;
   display: flex;
@@ -15,6 +15,7 @@ body {
   text-align: center;
   max-width: 900px;
   width: 100%;
+  padding: 20px;
 }
 
 /* Title styles */
@@ -32,11 +33,34 @@ body {
   60% { transform: translateY(-10px); }
 }
 
-/* Story progress */
+/* Progress container */
+#progress-container {
+  margin-bottom: 15px;
+}
+
+#progress-bar {
+  width: 100%;
+  height: 20px;
+  background: #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+#progress-bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  background: linear-gradient(to right, #ff69b4, #ff4500);
+  width: calc((var(--current) / var(--total)) * 100%);
+  transition: width 0.5s;
+  border-radius: 10px;
+}
+
 #story-progress {
-  font-size: 1.2em;
-  color: #ff69b4;
-  margin-bottom: 10px;
+  font-size: 1.5em;
+  color: #4682b4;
+  font-weight: bold;
 }
 
 /* Book container */
@@ -45,7 +69,7 @@ body {
   width: 100%;
   height: 650px;
   overflow: hidden;
-  background: url('https://www.transparenttextures.com/patterns/rice-paper.png'), #fffacd;
+  background: #fffacd;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
   border-radius: 10px;
   padding: 10px;
@@ -66,23 +90,24 @@ body {
 #passage-title {
   font-size: 2em;
   color: #ff4500;
-  text-align: center;
+  text-align: left;
   margin-bottom: 10px;
 }
 
 /* Info styles */
 #passage-info {
-  text-align: center;
-  font-size: 1.1em;
+  text-align: left;
+  font-size: 1.2em;
   color: #4682b4;
   margin-bottom: 15px;
 }
 
 /* Text styles */
 #passage-text {
-  font-size: 1.3em;
-  line-height: 1.6;
+  font-size: 1.5em;
+  line-height: 1.8;
   color: #333;
+  text-align: left;
 }
 
 /* Image styles */
@@ -92,12 +117,12 @@ body {
   max-width: 350px;
   border: 5px solid #ffd700;
   border-radius: 10px;
-  animation: bounceImage 3s infinite;
+  animation: float 3s infinite ease-in-out;
 }
 
-@keyframes bounceImage {
+@keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-15px); }
 }
 
 /* Controls styles */
@@ -105,24 +130,24 @@ body {
   margin-top: 15px;
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 15px;
 }
 
 /* Button styles */
 button {
-  padding: 15px 25px;
-  font-size: 1.2em;
+  width: 60px;
+  height: 60px;
+  font-size: 1.5em;
   background: linear-gradient(to right, #ff69b4, #ff4500);
   color: white;
   border: none;
-  border-radius: 15px;
+  border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.3s, background 0.3s;
+  transition: transform 0.3s;
 }
 
-button:hover {
-  transform: scale(1.1);
-  background: linear-gradient(to right, #ff4500, #ff69b4);
+button:hover:enabled, button:active:enabled {
+  transform: scale(1.2);
 }
 
 button:disabled {
@@ -134,22 +159,26 @@ button:disabled {
 /* Word styles */
 .word {
   padding: 0 2px;
+  position: relative;
 }
 
-.word.speaking {
-  background: #ffff00;
-  animation: glow 1s infinite alternate;
+.word.speaking .highlight {
+  background: #fffacd;
+  box-shadow: 0 0 10px #fffacd;
+  animation: glow 1.5s infinite alternate;
 }
 
 @keyframes glow {
-  from { background: #ffff00; }
-  to { background: #ffe600; }
+  from { box-shadow: 0 0 5px #fffacd; }
+  to { box-shadow: 0 0 15px #fffacd; }
 }
 
 /* Highlight styles */
 .highlight {
   color: #ff0000;
   font-weight: bold;
+  display: inline;
+  background: none;
 }
 
 /* Slide animations */
@@ -180,13 +209,13 @@ button:disabled {
 
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
 
 /* Star counter */
 #star-counter {
-  font-size: 1.2em;
+  font-size: 1.5em;
   color: #ffd700;
   margin-top: 10px;
   text-shadow: 1px 1px #ff4500;
