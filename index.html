@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fun Phonics Adventure!</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -13,13 +12,11 @@
     <h1 class="title">Fun Phonics Adventure! 🎉</h1>
     <div id="progress-container">
       <div id="progress-bar"></div>
-      <div id="story-progress">Story <span id="current-story">1</span> / <span id="total-stories">13</span></div>
-    </div>
-    <div id="book">
-      <div id="page">
-        <!-- Passage content will be loaded here -->
+      <div id="story-progress">
+        Story <span id="current-story">1</span> / <span id="total-stories">13</span>
       </div>
     </div>
+    <div id="book"><div id="page"></div></div>
     <div id="controls">
       <button id="prev-btn" disabled>⬅️</button>
       <button id="play-btn">🎵</button>
@@ -28,8 +25,9 @@
     </div>
     <div id="star-counter">Stars: <span id="star-count">0</span></div>
   </div>
-  <audio id="clap-sound" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
-  <audio id="cheer-sound" src="https://www.soundjay.com/human/cheer-01.mp3"></audio>
+
+  <audio id="clap-sound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload></audio>
+  <audio id="cheer-sound" src="https://www.soundjay.com/human/cheer-01.mp3" preload></audio>
   <script src="script.js"></script>
 </body>
 </html>
