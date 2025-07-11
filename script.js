@@ -1,4 +1,3 @@
-```javascript
 document.addEventListener('DOMContentLoaded', () => {
   let passages = [],
       currentIndex = 0,
@@ -9,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const clapSound  = document.getElementById('clap-sound'),
         cheerSound = document.getElementById('cheer-sound');
 
-  // 1) Load the stories JSON
+  // Load the stories JSON
   fetch('passages.json')
     .then(response => {
       if (!response.ok) throw new Error('Failed to load stories');
@@ -27,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('page').textContent = 'Oops! Unable to load stories.';
     });
 
-  // 2) Render a passage by index
+  // Render a passage by index
   function showPassage(i) {
     currentIndex = i;
     const p  = passages[i];
@@ -37,22 +36,19 @@ document.addEventListener('DOMContentLoaded', () => {
       <h1 id="passage-title">${p.title}</h1>
       <p id="passage-info">Story <span>${i+1}</span> / ${passages.length}</p>
       <div id="passage-text">${p.text}</div>
-      <img id="passage-image"
-           src="${p.image}"
-           alt=""
-           onerror="this.style.display='none'">
-    `;
+      <img id="passage-image" src="${p.image}" alt="" onerror="this.style.display='none';">
+    `; // Fixed syntax error in onerror attribute
 
     const textDiv = document.getElementById('passage-text');
     wrapWords(textDiv);
     buildRanges(textDiv);
 
-    document.getElementById('current-story').textContent = i+1;
-    document.documentElement.style.setProperty('--current', i+1);
+    document.getElementById('current-story').textContent = i + 1;
+    document.documentElement.style.setProperty('--current', i + 1);
     updateNavButtons();
   }
 
-  // 3) Wrap each word in a <span class="word">
+  // Wrap each word in a <span class="word">
   function wrapWords(container) {
     Array.from(container.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -73,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4) Build character-index ranges for speech syncing
+  // Build character-index ranges for speech syncing
   function buildRanges(div) {
     let cumulative = 0;
     wordRanges = [];
@@ -88,14 +84,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 5) Enable/disable Prev, Next, Star buttons
+  // Enable/disable Prev, Next, Star buttons
   function updateNavButtons() {
     document.getElementById('prev-btn').disabled = currentIndex === 0;
     document.getElementById('next-btn').disabled = currentIndex === passages.length - 1;
     document.getElementById('star-btn').disabled = currentIndex === 0 || stars >= passages.length;
   }
 
-  // 6) Flip pages with animation
+  // Flip pages with animation
   function flipTo(idx, dir) {
     if (idx < 0 || idx >= passages.length) return;
     clapSound.play();
@@ -116,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => oldPg.remove(), 500);
   }
 
-  // 7) Earn a star
+  // Earn a star
   document.getElementById('star-btn').addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
@@ -127,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 8) Read-aloud with word highlighting
+  // Read-aloud with word highlighting
   document.getElementById('play-btn').addEventListener('click', () => {
     window.speechSynthesis.cancel();
     if (currentSpeakingSpan) {
@@ -164,8 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.speechSynthesis.speak(utter);
   });
 
-  // 9) Prev/Next buttons
+  // Prev/Next buttons
   document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn').addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
 });
-```
