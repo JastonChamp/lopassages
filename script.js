@@ -181,11 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.speechSynthesis.speak(utter);
   });
 
-  // Speed button with touch support
+  // Speed button with enhanced touch support
   speedBtn.addEventListener('click', adjustSpeed);
   speedBtn.addEventListener('touchstart', (e) => {
     e.preventDefault(); // Prevent default touch behavior
     adjustSpeed();
+    e.stopPropagation(); // Prevent multiple triggers
   }, { passive: false });
 
   // Prev/Next buttons
