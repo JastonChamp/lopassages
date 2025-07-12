@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
       utter = null,
       charPos = 0,
       isPlaying = false,
-      isPaused = false;
-
+     isPaused = false,
+      recognition = null;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
         speedBtn = document.getElementById('speed-btn'),
@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMapBtn = document.getElementById('close-map'),
         storyMap = document.getElementById('story-map'),
         storyGrid = document.getElementById('story-grid'),
+     micBtn = document.getElementById('mic-btn'),
+        micStopBtn = document.getElementById('mic-stop-btn'),
+        feedbackDiv = document.getElementById('feedback'),
         readProgressBar = document.getElementById('read-progress-bar'),
          seekRange = document.getElementById('seek-range'),
         bookSelect = document.getElementById('book-select');
@@ -365,6 +368,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     updateControlButtons();
   }
+// Voice capture setup
+  function initVoiceCapture() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('SpeechRecognition not supported');
+      return;
+    }
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(r => r[0].transcript)
+        .join(' ');
+      const storyText = passages[currentIndex]?.text || '';
+      highlightReading(transcript, storyText);
+      if (feedbackDiv) feedbackDiv.textContent = transcript;
+    };
+    recognition.onstart = () => {
+      if (micBtn) micBtn.disabled = true;
+      if (micStopBtn) micStopBtn.disabled = false;
+    };
+    recognition.onend = () => {
+      if (micBtn) micBtn.disabled = false;
+      if (micStopBtn) micStopBtn.disabled = true;
+    };
+  }
+
+  function startVoiceCapture() {
+    if (!recognition) initVoiceCapture();
+    recognition && recognition.start();
+  }
+
+  function stopVoiceCapture() {
+    recognition && recognition.stop();
+  }
+
+  function highlightReading(transcript, storyText) {
+    const expected = storyText.split(/\s+/);
+    const spoken = transcript.trim().split(/\s+/);
+    let correct = 0;
+    expected.forEach((word, i) => {
+      const span = document.querySelector(`#passage-text .word:nth-child(${i + 1})`);
+      if (!span) return;
+      span.classList.remove('correct', 'incorrect');
+      if (spoken[i]) {
+        if (spoken[i].toLowerCase() === word.toLowerCase()) {
+          span.classList.add('correct');
+          correct++;
+        } else {
+          span.classList.add('incorrect');
+        }
+      }
+    });
+    updateReadProgress(correct / expected.length);
+  }
 
   // Speed button with enhanced touch support
   speedBtn.addEventListener('click', (e) => {
@@ -394,7 +453,8 @@ document.addEventListener('DOMContentLoaded', () => {
   stopBtn?.addEventListener('click', () => {
     if (confirm('Are you sure you want to stop?')) stopNarration();
   });
-
+micBtn?.addEventListener('click', startVoiceCapture);
+  micStopBtn?.addEventListener('click', stopVoiceCapture);
   if (seekRange) {
     seekRange.value = 0; // Initialize seek range
     seekRange.addEventListener('change', (e) => {
@@ -419,5 +479,6 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
     }
     stopNarration(false);
+    stopVoiceCapture();
   });
 });
