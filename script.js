@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.speechSynthesis.speak(utterance);
   }
 
-  playBtn?.addEventListener('click', readAloud);
+playBtn?.addEventListener('click', () => startNarration(charPos));
   pauseBtn?.addEventListener('click', pauseNarration);
   resumeBtn?.addEventListener('click', resumeNarration);
   stopBtn?.addEventListener('click', () => {
