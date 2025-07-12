@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-  let passages = [],
+  let categories = {},
+      passages = [],
+      currentBook = 'book1',
       currentIndex = 0,
     wordRanges = [],
       currentSpeakingSpan = null,
@@ -20,26 +22,28 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMapBtn = document.getElementById('close-map'),
         storyMap = document.getElementById('story-map'),
         storyGrid = document.getElementById('story-grid'),
-        readProgressBar = document.getElementById('read-progress-bar');
+       readProgressBar = document.getElementById('read-progress-bar'),
+        seekRange = document.getElementById('seek-range');
 
   // Initialize button text with default speed
   const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
-  const labels = ['Very Slow', 'Slow', 'Normal', 'Fast']; // Ensure 1:1 mapping
+   const labels = ['🐢', '🚶', '🏃', '🚀']; // Icon representation for speeds
   if (!speeds.includes(currentSpeed)) currentSpeed = 0.6; // Fallback
-  speedBtn.textContent = `Speed: ${labels[speeds.indexOf(currentSpeed)]}`;
+ speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
   console.log(`Initial speed set to: ${currentSpeed}, Label: ${labels[speeds.indexOf(currentSpeed)]}`); // Debug initial state
 
-  // Load the stories JSON
+// Load the stories JSON and default to Book 1
   fetch('passages.json')
     .then(response => {
       if (!response.ok) throw new Error('Failed to load stories');
       return response.json();
     })
     .then(data => {
-      passages = data;
+    categories = data;
+      passages = categories.book1 || [];
       document.getElementById('total-stories').textContent = passages.length;
       document.documentElement.style.setProperty('--total', passages.length);
-       buildStoryMap();
+    buildStoryMap();
       const saved = localStorage.getItem('progress');
       if (saved) {
         const { story, char } = JSON.parse(saved);
@@ -134,11 +138,13 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseBtn.disabled = !isPlaying;
     resumeBtn.disabled = !isPaused;
     stopBtn.disabled = !(isPlaying || isPaused);
+    resumeBtn.style.display = isPaused ? 'inline-block' : 'none';
   }
 
   function updateReadProgress(progress) {
     readProgressBar.style.setProperty('--progress', progress);
     readProgressBar.style.width = (progress * 100) + '%';
+     if (seekRange) seekRange.value = progress * 100;
   }
 
   function buildStoryMap() {
@@ -194,19 +200,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Adjust reading speed
   function adjustSpeed() {
-    const currentIndex = speeds.indexOf(currentSpeed);
-    if (currentIndex === -1) {
+     const idx = speeds.indexOf(currentSpeed);
+    if (idx === -1) {
       console.error('Current speed not found in speeds array:', currentSpeed);
       currentSpeed = 0.6; // Fallback to default
     }
-    const nextIndex = (currentIndex + 1) % speeds.length;
+   const nextIndex = (idx + 1) % speeds.length;
     currentSpeed = speeds[nextIndex];
-    const label = labels[nextIndex] || 'Unknown';
-    speedBtn.textContent = `Speed: ${label}`;
+    const label = labels[nextIndex] || '';
+    speedBtn.textContent = label;
     console.log(`Speed adjusted to: ${currentSpeed}, Label: ${label}`); // Enhanced debug
   }
 
- function startNarration(start = 0) {
+function startNarration(start = 0) {
     stopNarration(false);
 
     const text = document.getElementById('passage-text').textContent || '';
@@ -242,9 +248,12 @@ const speakText = text.slice(start);
       localStorage.removeItem('progress');
     };
 
- speechSynthesis.speak(utter);
+speechSynthesis.speak(utter);
     isPlaying = true;
     isPaused = false;
+  playBtn.classList.add('playing');
+    pauseBtn.classList.remove('paused');
+    resumeBtn.classList.remove('resume-highlight');
     updateControlButtons();
   }
 
@@ -253,6 +262,9 @@ const speakText = text.slice(start);
     speechSynthesis.pause();
     isPaused = true;
     isPlaying = false;
+    playBtn.classList.add('playing');
+    pauseBtn.classList.remove('paused');
+    resumeBtn.classList.remove('resume-highlight');
     updateControlButtons();
   }
 
@@ -272,6 +284,9 @@ const speakText = text.slice(start);
     }
     isPlaying = false;
     isPaused = false;
+    playBtn.classList.remove('playing');
+    pauseBtn.classList.remove('paused');
+    resumeBtn.classList.remove('resume-highlight');
     utter = null;
     if (clearSaved) {
       charPos = 0;
@@ -306,7 +321,21 @@ const speakText = text.slice(start);
   playBtn.addEventListener('click', () => startNarration(charPos));
   pauseBtn.addEventListener('click', pauseNarration);
   resumeBtn.addEventListener('click', resumeNarration);
-  stopBtn.addEventListener('click', () => stopNarration());
+ stopBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to stop?')) stopNarration();
+  });
+
+  if (seekRange) {
+    seekRange.addEventListener('change', (e) => {
+      const pos = Math.floor((e.target.value / 100) * (passages[currentIndex].text.length));
+      charPos = pos;
+      if (isPlaying || isPaused) {
+        startNarration(charPos);
+      } else {
+        updateReadProgress(charPos / passages[currentIndex].text.length);
+      }
+    });
+  }
 
   mapBtn.addEventListener('click', () => {
     stopNarration(false);
