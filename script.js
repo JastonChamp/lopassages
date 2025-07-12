@@ -106,10 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
      const imgPath = p.image ? `images/${p.image}` : '';
     const imgTag = imgPath ? `<img id="passage-image" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">` : '';
+    const formattedText = formatText(p.text);
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
       <p id="passage-info">Story <span>${i + 1}</span> / ${passages.length}</p>
-      <div id="passage-text">${p.text}</div>
+      <div id="passage-text">${formattedText}</div>
       ${imgTag}
     `;
 
@@ -163,6 +164,21 @@ document.addEventListener('DOMContentLoaded', () => {
         cumulative += len;
       }
     });
+  }
+
+  // Format raw story text into paragraphs
+  function formatText(text) {
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    const paragraphs = [];
+    let buf = [];
+    sentences.forEach((s, idx) => {
+      buf.push(s);
+      if (buf.length === 2 || idx === sentences.length - 1) {
+        paragraphs.push(buf.join(' '));
+        buf = [];
+      }
+    });
+    return paragraphs.map(p => `<p>${p}</p>`).join('');
   }
 
   // Enable/disable navigation and control buttons
@@ -334,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentSpeakingSpan.classList.remove('speaking');
       currentSpeakingSpan = null;
     }
+    document.querySelectorAll('#passage-text .speaking').forEach(span => span.classList.remove('speaking'));
     isPlaying = false;
     isPaused = false;
     playBtn.classList.remove('playing');
@@ -344,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
       charPos = 0;
       localStorage.removeItem('progress');
       updateReadProgress(0);
+        if (seekRange) seekRange.value = 0;
     }
     updateControlButtons();
   }
