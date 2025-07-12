@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
         storyMap = document.getElementById('story-map'),
         storyGrid = document.getElementById('story-grid'),
         readProgressBar = document.getElementById('read-progress-bar'),
-        seekRange = document.getElementById('seek-range');
+         seekRange = document.getElementById('seek-range'),
+        bookSelect = document.getElementById('book-select');
 
   // Initialize button text with default speed
   const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
@@ -41,6 +42,25 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(data => {
       categories = data || {};
+      if (bookSelect) {
+        bookSelect.innerHTML = '';
+        Object.keys(categories).forEach(key => {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = key.replace('book', 'Book ');
+          bookSelect.appendChild(opt);
+        });
+        bookSelect.value = currentBook;
+        bookSelect.addEventListener('change', () => {
+          currentBook = bookSelect.value;
+          passages = categories[currentBook] || [];
+          document.getElementById('total-stories').textContent = passages.length;
+          document.documentElement.style.setProperty('--total', passages.length);
+          buildStoryMap();
+          showPassage(0);
+          updateNavButtons();
+        });
+      }
       passages = categories[currentBook] || [];
       if (!passages.length) {
         console.warn('No passages found for current book:', currentBook);
@@ -84,11 +104,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset wordRanges for the new passage
     wordRanges = [];
 
+     const imgPath = p.image ? `images/${p.image}` : '';
+    const imgTag = imgPath ? `<img id="passage-image" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">` : '';
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
       <p id="passage-info">Story <span>${i + 1}</span> / ${passages.length}</p>
       <div id="passage-text">${p.text}</div>
-      <img id="passage-image" src="${p.image}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">
+      ${imgTag}
     `;
 
     const textDiv = pg.querySelector('#passage-text');
@@ -174,7 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
     passages.forEach((p, idx) => {
       const card = document.createElement('div');
       card.className = 'story-card';
-      card.innerHTML = `<img src="${p.image}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
+     const imgPath = p.image ? `images/${p.image}` : '';
+      card.innerHTML = `<img src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
       card.addEventListener('click', () => {
         storyMap.classList.add('hidden');
         flipTo(idx, idx > currentIndex ? 'next' : 'prev');
