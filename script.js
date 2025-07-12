@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
       utter = null,
       charPos = 0,
       isPlaying = false,
-     isPaused = false,
+      isPaused = false,
       recognition = null;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMapBtn = document.getElementById('close-map'),
         storyMap = document.getElementById('story-map'),
         storyGrid = document.getElementById('story-grid'),
-     micBtn = document.getElementById('mic-btn'),
+        micBtn = document.getElementById('mic-btn'),
         micStopBtn = document.getElementById('mic-stop-btn'),
         feedbackDiv = document.getElementById('feedback'),
         readProgressBar = document.getElementById('read-progress-bar'),
-         seekRange = document.getElementById('seek-range'),
+        seekRange = document.getElementById('seek-range'),
         bookSelect = document.getElementById('book-select');
 
   // Initialize button text with default speed
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset wordRanges for the new passage
     wordRanges = [];
 
-     const imgPath = p.image ? `images/${p.image}` : '';
+    const imgPath = p.image ? `images/${p.image}` : '';
     const imgTag = imgPath ? `<img id="passage-image" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">` : '';
     const formattedText = formatText(p.text);
     pg.innerHTML = `
@@ -154,6 +154,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Define traverse function to fix the syntax error
+  function traverse(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      cumulative += node.textContent.length;
+      return;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.classList.contains('word')) {
+        const len = node.textContent.length;
+        wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
+        cumulative += len;
+      } else {
+        Array.from(node.childNodes).forEach(traverse);
+      }
+    }
+  }
+
   // Build character-index ranges for speech syncing
   function buildRanges(div) {
     let cumulative = 0;
@@ -161,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Array.from(div.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
         cumulative += node.textContent.length;
-      return;
+        return;
       }
    
       if (node.nodeType === Node.ELEMENT_NODE) {
@@ -173,8 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
           Array.from(node.childNodes).forEach(traverse);
         }
       }
-    }
-
+    });
     traverse(div);
   }
 
@@ -224,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     passages.forEach((p, idx) => {
       const card = document.createElement('div');
       card.className = 'story-card';
-     const imgPath = p.image ? `images/${p.image}` : '';
+      const imgPath = p.image ? `images/${p.image}` : '';
       card.innerHTML = `<img src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
       card.addEventListener('click', () => {
         storyMap.classList.add('hidden');
@@ -373,11 +389,12 @@ document.addEventListener('DOMContentLoaded', () => {
       charPos = 0;
       localStorage.removeItem('progress');
       updateReadProgress(0);
-        if (seekRange) seekRange.value = 0;
+      if (seekRange) seekRange.value = 0;
     }
     updateControlButtons();
   }
-// Voice capture setup
+
+  // Voice capture setup
   function initVoiceCapture() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -493,13 +510,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.speechSynthesis.speak(utterance);
   }
 
-playBtn?.addEventListener('click', () => startNarration(charPos));
+  playBtn?.addEventListener('click', () => startNarration(charPos));
   pauseBtn?.addEventListener('click', pauseNarration);
   resumeBtn?.addEventListener('click', resumeNarration);
   stopBtn?.addEventListener('click', () => {
     if (confirm('Are you sure you want to stop?')) stopNarration();
   });
-micBtn?.addEventListener('click', startVoiceCapture);
+  micBtn?.addEventListener('click', startVoiceCapture);
   micStopBtn?.addEventListener('click', stopVoiceCapture);
   if (seekRange) {
     seekRange.value = 0; // Initialize seek range
