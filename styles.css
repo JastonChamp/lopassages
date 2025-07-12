@@ -372,6 +372,21 @@ button:disabled {
   text-decoration: underline;
 }
 
+.word.correct {
+  background: rgba(144,238,144,0.5);
+}
+
+.word.incorrect {
+  background: rgba(255,99,71,0.5);
+}
+
+#feedback {
+  margin-top: 10px;
+  font-size: 1.2em;
+  color: #4682b4;
+}
+
+
 .word.speaking .highlight {
   background: rgba(255,255,0,0.7);
   animation: glow 1s infinite alternate;
