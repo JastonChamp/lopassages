@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fun Phonics Adventure!</title>
   <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -21,6 +22,7 @@
 
     <div id="progress-container">
       <div id="progress-bar"></div>
+      <div id="read-progress-bar"></div>
       <div id="story-progress">
         Story <span id="current-story">1</span> / <span id="total-stories">13</span>
       </div>
@@ -31,11 +33,12 @@
     </div>
 
     <div id="controls">
+      <button id="map-btn" aria-label="Choose a story">📚</button>
       <button id="prev-btn" disabled>Back ⬅️</button>
-      <button id="play-btn" aria-label="Play narration">
-        <span aria-hidden="true">🎵</span>
-        <span class="visually-hidden">Play narration</span>
-      </button>
+             <button id="play-btn" aria-label="Play narration">▶️</button>
+      <button id="pause-btn" aria-label="Pause narration" disabled>⏸️</button>
+      <button id="resume-btn" aria-label="Resume narration" disabled>▶️</button>
+      <button id="stop-btn" aria-label="Stop narration" disabled>⏹️</button>
       <button id="next-btn" disabled>Next ➡️</button>
       <button id="speed-btn" aria-label="Adjust reading speed">Speed: Normal</button>
       <button id="star-btn" disabled>Star ⭐</button>
@@ -43,6 +46,10 @@
 
     <div id="star-counter">
       Stars: <span id="star-count">0</span>
+    </div>
+     <div id="story-map" class="hidden">
+      <button id="close-map" aria-label="Close story list">✖️</button>
+      <div id="story-grid"></div>
     </div>
   </div>
 
