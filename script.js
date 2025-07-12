@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
       passages = [],
       currentBook = 'book1',
       currentIndex = 0,
-    wordRanges = [],
+      wordRanges = [],
       currentSpeakingSpan = null,
       stars = 0,
       currentSpeed = 0.6,
@@ -11,9 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
       charPos = 0,
       isPlaying = false,
       isPaused = false;
+
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
-       speedBtn = document.getElementById('speed-btn'),
+        speedBtn = document.getElementById('speed-btn'),
         playBtn = document.getElementById('play-btn'),
         pauseBtn = document.getElementById('pause-btn'),
         resumeBtn = document.getElementById('resume-btn'),
@@ -22,34 +23,44 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMapBtn = document.getElementById('close-map'),
         storyMap = document.getElementById('story-map'),
         storyGrid = document.getElementById('story-grid'),
-       readProgressBar = document.getElementById('read-progress-bar'),
+        readProgressBar = document.getElementById('read-progress-bar'),
         seekRange = document.getElementById('seek-range');
 
   // Initialize button text with default speed
   const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
-   const labels = ['🐢', '🚶', '🏃', '🚀']; // Icon representation for speeds
+  const labels = ['🐢', '🚶', '🏃', '🚀']; // Icon representation for speeds
   if (!speeds.includes(currentSpeed)) currentSpeed = 0.6; // Fallback
- speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
+  speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
   console.log(`Initial speed set to: ${currentSpeed}, Label: ${labels[speeds.indexOf(currentSpeed)]}`); // Debug initial state
 
-// Load the stories JSON and default to Book 1
+  // Load the stories JSON and default to Book 1
   fetch('passages.json')
     .then(response => {
       if (!response.ok) throw new Error('Failed to load stories');
       return response.json();
     })
     .then(data => {
-    categories = data;
-      passages = categories.book1 || [];
+      categories = data || {};
+      passages = categories[currentBook] || [];
+      if (!passages.length) {
+        console.warn('No passages found for current book:', currentBook);
+        document.getElementById('page').textContent = 'No stories available.';
+        return;
+      }
       document.getElementById('total-stories').textContent = passages.length;
       document.documentElement.style.setProperty('--total', passages.length);
-    buildStoryMap();
+      buildStoryMap();
       const saved = localStorage.getItem('progress');
       if (saved) {
         const { story, char } = JSON.parse(saved);
-        showPassage(story);
-        charPos = char || 0;
-        updateReadProgress(charPos / (passages[story].text.length));
+        if (story >= 0 && story < passages.length) {
+          showPassage(story);
+          charPos = char || 0;
+          const textLength = passages[story]?.text?.length || 1; // Prevent division by zero
+          updateReadProgress(charPos / textLength);
+        } else {
+          showPassage(0);
+        }
       } else {
         showPassage(0);
       }
@@ -64,6 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function showPassage(i, container = document.getElementById('page')) {
     currentIndex = i;
     const p = passages[i];
+    if (!p) {
+      console.error('Invalid passage index:', i);
+      return;
+    }
     const pg = container;
 
     // Reset wordRanges for the new passage
@@ -76,14 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
       <img id="passage-image" src="${p.image}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">
     `;
 
-    const textDiv = pg.querySelector('#passage-text'); // Use pg to ensure correct context
-    wrapWords(textDiv);
-    buildRanges(textDiv);
+    const textDiv = pg.querySelector('#passage-text');
+    if (textDiv) {
+      wrapWords(textDiv);
+      buildRanges(textDiv);
+    }
 
     document.getElementById('current-story').textContent = i + 1;
     document.documentElement.style.setProperty('--current', i + 1);
     updateNavButtons();
-     updateControlButtons();
+    updateControlButtons();
     updateReadProgress(0);
     charPos = 0;
   }
@@ -114,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Build character-index ranges for speech syncing
   function buildRanges(div) {
     let cumulative = 0;
-    wordRanges = []; // Ensure ranges are rebuilt
+    wordRanges = [];
     Array.from(div.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
         cumulative += node.textContent.length;
@@ -126,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-// Enable/disable navigation and control buttons
+  // Enable/disable navigation and control buttons
   function updateNavButtons() {
     document.getElementById('prev-btn').disabled = currentIndex === 0;
     document.getElementById('next-btn').disabled = currentIndex === passages.length - 1;
@@ -142,12 +159,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateReadProgress(progress) {
-    readProgressBar.style.setProperty('--progress', progress);
-    readProgressBar.style.width = (progress * 100) + '%';
-     if (seekRange) seekRange.value = progress * 100;
+    if (readProgressBar) {
+      readProgressBar.style.setProperty('--progress', isNaN(progress) ? 0 : progress);
+      readProgressBar.style.width = (isNaN(progress) ? 0 : progress * 100) + '%';
+    }
+    if (seekRange) {
+      seekRange.value = isNaN(progress) ? 0 : progress * 100;
+    }
   }
 
   function buildStoryMap() {
+    if (!storyGrid) return;
     storyGrid.innerHTML = '';
     passages.forEach((p, idx) => {
       const card = document.createElement('div');
@@ -160,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
       storyGrid.appendChild(card);
     });
   }
-
 
   // Flip pages with animation
   function flipTo(idx, dir) {
@@ -200,29 +221,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Adjust reading speed
   function adjustSpeed() {
-     const idx = speeds.indexOf(currentSpeed);
+    const idx = speeds.indexOf(currentSpeed);
     if (idx === -1) {
       console.error('Current speed not found in speeds array:', currentSpeed);
       currentSpeed = 0.6; // Fallback to default
     }
-   const nextIndex = (idx + 1) % speeds.length;
+    const nextIndex = (idx + 1) % speeds.length;
     currentSpeed = speeds[nextIndex];
     const label = labels[nextIndex] || '';
     speedBtn.textContent = label;
     console.log(`Speed adjusted to: ${currentSpeed}, Label: ${label}`); // Enhanced debug
   }
 
-function startNarration(start = 0) {
+  function startNarration(start = 0) {
     stopNarration(false);
 
-    const text = document.getElementById('passage-text').textContent || '';
-const speakText = text.slice(start);
+    const text = document.getElementById('passage-text')?.textContent || '';
+    const speakText = text.slice(start);
+    if (!speakText) return;
     utter = new SpeechSynthesisUtterance(speakText);
     utter.rate = currentSpeed;
 
     utter.onboundary = event => {
       if (event.name === 'word') {
-      const globalIndex = start + event.charIndex;
+        const globalIndex = start + event.charIndex;
         charPos = globalIndex;
         if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
         const range = wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
@@ -230,7 +252,8 @@ const speakText = text.slice(start);
           range.span.classList.add('speaking');
           currentSpeakingSpan = range.span;
         }
-        updateReadProgress(globalIndex / text.length);
+        const textLength = text.length || 1; // Prevent division by zero
+        updateReadProgress(globalIndex / textLength);
         localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
       }
     };
@@ -240,18 +263,21 @@ const speakText = text.slice(start);
         currentSpeakingSpan.classList.remove('speaking');
         currentSpeakingSpan = null;
       }
-       isPlaying = false;
+      isPlaying = false;
       isPaused = false;
       charPos = 0;
       updateControlButtons();
       updateReadProgress(1);
       localStorage.removeItem('progress');
+      playBtn.classList.remove('playing');
+      pauseBtn.classList.remove('paused');
+      resumeBtn.classList.remove('resume-highlight');
     };
 
-speechSynthesis.speak(utter);
+    speechSynthesis.speak(utter);
     isPlaying = true;
     isPaused = false;
-  playBtn.classList.add('playing');
+    playBtn.classList.add('playing');
     pauseBtn.classList.remove('paused');
     resumeBtn.classList.remove('resume-highlight');
     updateControlButtons();
@@ -262,9 +288,9 @@ speechSynthesis.speak(utter);
     speechSynthesis.pause();
     isPaused = true;
     isPlaying = false;
-    playBtn.classList.add('playing');
-    pauseBtn.classList.remove('paused');
-    resumeBtn.classList.remove('resume-highlight');
+    playBtn.classList.remove('playing');
+    pauseBtn.classList.add('paused');
+    resumeBtn.classList.add('resume-highlight');
     updateControlButtons();
   }
 
@@ -273,6 +299,9 @@ speechSynthesis.speak(utter);
     speechSynthesis.resume();
     isPaused = false;
     isPlaying = true;
+    playBtn.classList.add('playing');
+    pauseBtn.classList.remove('paused');
+    resumeBtn.classList.remove('resume-highlight');
     updateControlButtons();
   }
 
@@ -298,50 +327,51 @@ speechSynthesis.speak(utter);
 
   // Speed button with enhanced touch support
   speedBtn.addEventListener('click', (e) => {
-    e.preventDefault(); // Prevent default click behavior
+    e.preventDefault();
     console.log('Click event fired');
     adjustSpeed();
   });
   speedBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault(); // Prevent default touch behavior
+    e.preventDefault();
     console.log('Touchstart event fired');
     adjustSpeed();
-    e.stopPropagation(); // Prevent multiple triggers
+    e.stopPropagation();
   }, { passive: false });
   speedBtn.addEventListener('touchend', (e) => {
-    e.preventDefault(); // Prevent default touchend behavior
+    e.preventDefault();
     console.log('Touchend event fired');
     adjustSpeed();
   }, { passive: false });
 
   // Prev/Next buttons
-  document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
-  document.getElementById('next-btn').addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
-  
-  playBtn.addEventListener('click', () => startNarration(charPos));
-  pauseBtn.addEventListener('click', pauseNarration);
-  resumeBtn.addEventListener('click', resumeNarration);
- stopBtn.addEventListener('click', () => {
+  document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
+  document.getElementById('next-btn')?.addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
+
+  playBtn?.addEventListener('click', () => startNarration(charPos));
+  pauseBtn?.addEventListener('click', pauseNarration);
+  resumeBtn?.addEventListener('click', resumeNarration);
+  stopBtn?.addEventListener('click', () => {
     if (confirm('Are you sure you want to stop?')) stopNarration();
   });
 
   if (seekRange) {
+    seekRange.value = 0; // Initialize seek range
     seekRange.addEventListener('change', (e) => {
-      const pos = Math.floor((e.target.value / 100) * (passages[currentIndex].text.length));
+      const pos = Math.floor((e.target.value / 100) * (passages[currentIndex]?.text?.length || 1));
       charPos = pos;
       if (isPlaying || isPaused) {
         startNarration(charPos);
       } else {
-        updateReadProgress(charPos / passages[currentIndex].text.length);
+        updateReadProgress(charPos / (passages[currentIndex]?.text?.length || 1));
       }
     });
   }
 
-  mapBtn.addEventListener('click', () => {
+  mapBtn?.addEventListener('click', () => {
     stopNarration(false);
     storyMap.classList.remove('hidden');
   });
-  closeMapBtn.addEventListener('click', () => storyMap.classList.add('hidden'));
+  closeMapBtn?.addEventListener('click', () => storyMap.classList.add('hidden'));
 
   window.addEventListener('beforeunload', () => {
     if (isPlaying || isPaused) {
