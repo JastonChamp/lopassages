@@ -447,7 +447,44 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn')?.addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
 
-  playBtn?.addEventListener('click', () => startNarration(charPos));
+  // Set up Web Speech API reading with word highlighting
+  function readAloud() {
+    // Stop any ongoing speech before starting a new utterance
+    window.speechSynthesis.cancel();
+
+    const container = document.getElementById('passage-text');
+    if (!container) return;
+
+    const text = container.textContent;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8; // steady pace for kids
+
+    utterance.onboundary = (e) => {
+      if (e.name === 'word') {
+        // remove highlight from previously spoken word
+        if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+
+        // find the span that contains the char index of this boundary
+        const range = wordRanges.find(r => e.charIndex >= r.start && e.charIndex <= r.end);
+        if (range) {
+          range.span.classList.add('speaking');
+          currentSpeakingSpan = range.span;
+        }
+      }
+    };
+
+    utterance.onend = () => {
+      // clean up any leftover highlight when the utterance finishes
+      if (currentSpeakingSpan) {
+        currentSpeakingSpan.classList.remove('speaking');
+        currentSpeakingSpan = null;
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  playBtn?.addEventListener('click', readAloud);
   pauseBtn?.addEventListener('click', pauseNarration);
   resumeBtn?.addEventListener('click', resumeNarration);
   stopBtn?.addEventListener('click', () => {
