@@ -154,11 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Define traverse function to fix the syntax error
-  function traverse(node) {
+  // Define traverse function to fix the syntax error and handle cumulative
+  function traverse(node, cumulative) {
     if (node.nodeType === Node.TEXT_NODE) {
       cumulative += node.textContent.length;
-      return;
+      return cumulative;
     }
     if (node.nodeType === Node.ELEMENT_NODE) {
       if (node.classList.contains('word')) {
@@ -166,9 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
         wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
         cumulative += len;
       } else {
-        Array.from(node.childNodes).forEach(traverse);
+        Array.from(node.childNodes).forEach(child => {
+          cumulative = traverse(child, cumulative);
+        });
       }
     }
+    return cumulative;
   }
 
   // Build character-index ranges for speech syncing
@@ -187,11 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
           wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
           cumulative += len;
         } else {
-          Array.from(node.childNodes).forEach(traverse);
+          Array.from(node.childNodes).forEach(child => {
+            cumulative = traverse(child, cumulative);
+          });
         }
       }
     });
-    traverse(div);
+    cumulative = traverse(div, cumulative);
   }
 
   // Format raw story text into paragraphs
