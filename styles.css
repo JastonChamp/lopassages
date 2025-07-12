@@ -280,6 +280,23 @@ button:disabled {
   transform: scale(1);
 }
 
+.playing {
+  background: #90EE90;
+}
+
+.paused {
+  background: #FF6347;
+}
+
+.resume-highlight {
+  box-shadow: 0 0 10px #90EE90;
+}
+
+#seek-range {
+  width: 80%;
+  margin: 10px auto;
+}
+
 .hidden {
   display: none;
 }
