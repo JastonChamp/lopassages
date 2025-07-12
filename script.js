@@ -1,14 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
   let passages = [],
       currentIndex = 0,
-      wordRanges = [], // Global, but reset per passage
+    wordRanges = [],
       currentSpeakingSpan = null,
       stars = 0,
-      currentSpeed = 0.6; // Default to "Slow" for 4-5-year-olds
-
+      currentSpeed = 0.6,
+      utter = null,
+      charPos = 0,
+      isPlaying = false,
+      isPaused = false;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
-        speedBtn = document.getElementById('speed-btn');
+       speedBtn = document.getElementById('speed-btn'),
+        playBtn = document.getElementById('play-btn'),
+        pauseBtn = document.getElementById('pause-btn'),
+        resumeBtn = document.getElementById('resume-btn'),
+        stopBtn = document.getElementById('stop-btn'),
+        mapBtn = document.getElementById('map-btn'),
+        closeMapBtn = document.getElementById('close-map'),
+        storyMap = document.getElementById('story-map'),
+        storyGrid = document.getElementById('story-grid'),
+        readProgressBar = document.getElementById('read-progress-bar');
 
   // Initialize button text with default speed
   const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
@@ -27,7 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
       passages = data;
       document.getElementById('total-stories').textContent = passages.length;
       document.documentElement.style.setProperty('--total', passages.length);
-      showPassage(0);
+       buildStoryMap();
+      const saved = localStorage.getItem('progress');
+      if (saved) {
+        const { story, char } = JSON.parse(saved);
+        showPassage(story);
+        charPos = char || 0;
+        updateReadProgress(charPos / (passages[story].text.length));
+      } else {
+        showPassage(0);
+      }
       updateNavButtons();
     })
     .catch(err => {
@@ -58,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('current-story').textContent = i + 1;
     document.documentElement.style.setProperty('--current', i + 1);
     updateNavButtons();
+     updateControlButtons();
+    updateReadProgress(0);
+    charPos = 0;
   }
 
   // Wrap each word in a <span class="word">
@@ -98,16 +122,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Enable/disable Prev, Next, Star buttons
+// Enable/disable navigation and control buttons
   function updateNavButtons() {
     document.getElementById('prev-btn').disabled = currentIndex === 0;
     document.getElementById('next-btn').disabled = currentIndex === passages.length - 1;
     document.getElementById('star-btn').disabled = currentIndex === 0 || stars >= passages.length;
   }
 
+  function updateControlButtons() {
+    playBtn.disabled = isPlaying || isPaused;
+    pauseBtn.disabled = !isPlaying;
+    resumeBtn.disabled = !isPaused;
+    stopBtn.disabled = !(isPlaying || isPaused);
+  }
+
+  function updateReadProgress(progress) {
+    readProgressBar.style.setProperty('--progress', progress);
+    readProgressBar.style.width = (progress * 100) + '%';
+  }
+
+  function buildStoryMap() {
+    storyGrid.innerHTML = '';
+    passages.forEach((p, idx) => {
+      const card = document.createElement('div');
+      card.className = 'story-card';
+      card.innerHTML = `<img src="${p.image}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
+      card.addEventListener('click', () => {
+        storyMap.classList.add('hidden');
+        flipTo(idx, idx > currentIndex ? 'next' : 'prev');
+      });
+      storyGrid.appendChild(card);
+    });
+  }
+
+
   // Flip pages with animation
   function flipTo(idx, dir) {
     if (idx < 0 || idx >= passages.length) return;
+    stopNarration();
     whooshSound.play();
 
     const oldPg = document.getElementById('page');
@@ -154,30 +206,26 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log(`Speed adjusted to: ${currentSpeed}, Label: ${label}`); // Enhanced debug
   }
 
-  // Read-aloud with word highlighting
-  document.getElementById('play-btn').addEventListener('click', () => {
-    window.speechSynthesis.cancel();
-    if (currentSpeakingSpan) {
-      currentSpeakingSpan.classList.remove('speaking');
-      currentSpeakingSpan = null;
-    }
+ function startNarration(start = 0) {
+    stopNarration(false);
 
     const text = document.getElementById('passage-text').textContent || '';
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = currentSpeed; // Use current speed
+const speakText = text.slice(start);
+    utter = new SpeechSynthesisUtterance(speakText);
+    utter.rate = currentSpeed;
 
     utter.onboundary = event => {
       if (event.name === 'word') {
-        if (currentSpeakingSpan) {
-          currentSpeakingSpan.classList.remove('speaking');
-        }
-        const range = wordRanges.find(r =>
-          event.charIndex >= r.start && event.charIndex <= r.end
-        );
+      const globalIndex = start + event.charIndex;
+        charPos = globalIndex;
+        if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
+        const range = wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
         if (range) {
           range.span.classList.add('speaking');
           currentSpeakingSpan = range.span;
         }
+        updateReadProgress(globalIndex / text.length);
+        localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
       }
     };
 
@@ -186,10 +234,52 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSpeakingSpan.classList.remove('speaking');
         currentSpeakingSpan = null;
       }
+       isPlaying = false;
+      isPaused = false;
+      charPos = 0;
+      updateControlButtons();
+      updateReadProgress(1);
+      localStorage.removeItem('progress');
     };
 
-    window.speechSynthesis.speak(utter);
-  });
+ speechSynthesis.speak(utter);
+    isPlaying = true;
+    isPaused = false;
+    updateControlButtons();
+  }
+
+  function pauseNarration() {
+    if (!isPlaying) return;
+    speechSynthesis.pause();
+    isPaused = true;
+    isPlaying = false;
+    updateControlButtons();
+  }
+
+  function resumeNarration() {
+    if (!isPaused) return;
+    speechSynthesis.resume();
+    isPaused = false;
+    isPlaying = true;
+    updateControlButtons();
+  }
+
+  function stopNarration(clearSaved = true) {
+    speechSynthesis.cancel();
+    if (currentSpeakingSpan) {
+      currentSpeakingSpan.classList.remove('speaking');
+      currentSpeakingSpan = null;
+    }
+    isPlaying = false;
+    isPaused = false;
+    utter = null;
+    if (clearSaved) {
+      charPos = 0;
+      localStorage.removeItem('progress');
+      updateReadProgress(0);
+    }
+    updateControlButtons();
+  }
 
   // Speed button with enhanced touch support
   speedBtn.addEventListener('click', (e) => {
@@ -212,4 +302,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Prev/Next buttons
   document.getElementById('prev-btn').addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn').addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
+  
+  playBtn.addEventListener('click', () => startNarration(charPos));
+  pauseBtn.addEventListener('click', pauseNarration);
+  resumeBtn.addEventListener('click', resumeNarration);
+  stopBtn.addEventListener('click', () => stopNarration());
+
+  mapBtn.addEventListener('click', () => {
+    stopNarration(false);
+    storyMap.classList.remove('hidden');
+  });
+  closeMapBtn.addEventListener('click', () => storyMap.classList.add('hidden'));
+
+  window.addEventListener('beforeunload', () => {
+    if (isPlaying || isPaused) {
+      localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
+    }
+    stopNarration(false);
+  });
 });
