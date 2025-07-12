@@ -161,12 +161,21 @@ document.addEventListener('DOMContentLoaded', () => {
     Array.from(div.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
         cumulative += node.textContent.length;
-      } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('word')) {
-        const len = node.textContent.length;
-        wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
-        cumulative += len;
+      return;
       }
-    });
+   
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.classList.contains('word')) {
+          const len = node.textContent.length;
+          wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
+          cumulative += len;
+        } else {
+          Array.from(node.childNodes).forEach(traverse);
+        }
+      }
+    }
+
+    traverse(div);
   }
 
   // Format raw story text into paragraphs
