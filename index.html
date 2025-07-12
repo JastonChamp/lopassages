@@ -37,15 +37,18 @@
       <button id="prev-btn" disabled>Back ⬅️</button>
              <button id="play-btn" aria-label="Play narration">▶️</button>
       <button id="pause-btn" aria-label="Pause narration" disabled>⏸️</button>
-      <button id="resume-btn" aria-label="Resume narration" disabled>▶️</button>
+         <button id="resume-btn" aria-label="Resume narration" disabled>Resume ▶️</button>
       <button id="stop-btn" aria-label="Stop narration" disabled>⏹️</button>
       <button id="next-btn" disabled>Next ➡️</button>
-      <button id="speed-btn" aria-label="Adjust reading speed">Speed: Normal</button>
+       <button id="speed-btn" aria-label="Adjust reading speed">🐢</button>
       <button id="star-btn" disabled>Star ⭐</button>
     </div>
 
     <div id="star-counter">
       Stars: <span id="star-count">0</span>
+      </div>
+    <div id="seek-container">
+      <input type="range" id="seek-range" min="0" max="100" value="0">
     </div>
      <div id="story-map" class="hidden">
       <button id="close-map" aria-label="Close story list">✖️</button>
