@@ -43,11 +43,14 @@
       <button id="next-btn" disabled>Next ➡️</button>
        <button id="speed-btn" aria-label="Adjust reading speed">🐢</button>
       <button id="star-btn" disabled>Star ⭐</button>
+       <button id="mic-btn" aria-label="Start reading">🎤</button>
+      <button id="mic-stop-btn" aria-label="Stop reading" disabled>⏹🎤</button>
     </div>
 
     <div id="star-counter">
       Stars: <span id="star-count">0</span>
       </div>
+     <div id="feedback" aria-live="polite"></div>
     <div id="seek-container">
       <input type="range" id="seek-range" min="0" max="100" value="0">
     </div>
