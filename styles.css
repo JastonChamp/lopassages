@@ -129,6 +129,25 @@ body {
   overflow: hidden;
   margin-bottom: 5px;
 }
+#read-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+#read-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(to right, #87CEEB, #4CAF50);
+  width: calc(var(--progress, 0) * 100%);
+  transition: width 0.3s ease;
+}
 #progress-bar::after {
   content: '';
   position: absolute;
@@ -259,6 +278,46 @@ button:disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: scale(1);
+}
+
+.hidden {
+  display: none;
+}
+
+#story-map {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.95);
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 20px;
+}
+#story-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+.story-card {
+  border: 4px solid #ffd700;
+  border-radius: 10px;
+  padding: 10px;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.story-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.story-title {
+  font-family: 'Baloo 2', cursive;
+  margin-top: 8px;
+  font-size: 1.2em;
 }
 
 /* Screen reader only text */
