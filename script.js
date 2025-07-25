@@ -529,6 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (spoken[i].toLowerCase() === word.toLowerCase()) {
           span.classList.add('correct');
           correct++;
+          currentWordIndex = i + 1; // Update current word on correct
         } else {
           span.classList.add('incorrect');
           nextIndex = Math.min(nextIndex, i);
