@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const labels = ['🐢', '🚶', '🏃', '🚀'];
   speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
 
-  // Placeholder data for empty books
+  // Placeholder story for empty books
   const placeholderStory = {
     title: "Coming Soon!",
     text: "More adventures are on the way! Check back later. 🎉",
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function wrapWords(container) {
     Array.from(container.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
-        const parts = node.textContent.split(/(\s+)/),
+        const parts = node.textContent.split(/(\s+/),
               frag = document.createDocumentFragment();
         parts.forEach(tok => {
           if (/^\s+$/.test(tok)) {
