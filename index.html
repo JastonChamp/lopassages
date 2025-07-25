@@ -21,8 +21,8 @@
     <h1 class="title" style="display: none;">Fun Phonics Adventure! 🎉</h1> <!-- Hidden original title -->
 
     <div id="progress-container">
-      <div id="progress-bar" title="Story Progress: 0%"></div>
-      <div id="read-progress-bar" title="Reading Progress: 0%"></div>
+      <div id="progress-bar"></div>
+      <div id="read-progress-bar"></div>
       <div id="story-progress">
         Story <span id="current-story">1</span> / <span id="total-stories">13</span>
       </div>
@@ -33,34 +33,24 @@
     </div>
 
     <div id="controls">
-      <!-- Navigation Group -->
-      <div class="control-group nav-group">
-        <select id="book-select" aria-label="Choose book"></select>
-        <button id="map-btn" aria-label="Choose a story">📚</button>
-        <button id="prev-btn" disabled>Back ⬅️</button>
-        <button id="next-btn" disabled>Next ➡️</button>
-      </div>
-      <!-- Playback Group -->
-      <div class="control-group playback-group">
-        <button id="play-btn" aria-label="Play narration">▶️</button>
-        <button id="pause-btn" aria-label="Pause narration" disabled>⏸️</button>
-        <button id="resume-btn" aria-label="Resume narration" disabled>Resume ▶️</button>
-        <button id="stop-btn" aria-label="Stop narration" disabled>⏹️</button>
-      </div>
-      <!-- Extras Group -->
-      <div class="control-group extras-group">
-        <button id="speed-btn" aria-label="Adjust reading speed">🐢</button>
-        <button id="star-btn" disabled>Star ⭐</button>
-        <button id="mic-btn" aria-label="Start reading">🎤</button>
-        <button id="mic-stop-btn" aria-label="Stop reading" disabled>⏹🎤</button>
-        <button id="dark-mode-btn" aria-label="Toggle dark mode">🌙</button>
-        <button id="high-contrast-btn" aria-label="Toggle high contrast mode">🔆</button>
-        <button id="stats-btn" aria-label="View stats">📊</button>
-      </div>
+      <select id="book-select" aria-label="Choose book"></select>
+      <button id="map-btn" aria-label="Choose a story">📚</button>
+      <button id="prev-btn" disabled>Back ⬅️</button>
+      <button id="play-btn" aria-label="Play narration">▶️</button>
+      <button id="pause-btn" aria-label="Pause narration" disabled>⏸️</button>
+      <button id="resume-btn" aria-label="Resume narration" disabled>Resume ▶️</button>
+      <button id="stop-btn" aria-label="Stop narration" disabled>⏹️</button>
+      <button id="next-btn" disabled>Next ➡️</button>
+      <button id="speed-btn" aria-label="Adjust reading speed">🐢</button>
+      <button id="star-btn" disabled>Star ⭐</button>
+      <button id="mic-btn" aria-label="Start reading">🎤</button>
+      <button id="mic-stop-btn" aria-label="Stop reading" disabled>⏹🎤</button>
+      <button id="dark-mode-btn" aria-label="Toggle dark mode">🌙</button>
+      <button id="fullscreen-btn" aria-label="Toggle full screen">🖥️</button> <!-- New full-screen button -->
     </div>
 
     <div id="star-counter">
-      Stars: <div id="star-icons"></div>
+      Stars: <span id="star-count">0</span>
     </div>
     <div id="feedback" aria-live="polite"></div>
     <div id="seek-container">
@@ -70,27 +60,10 @@
       <button id="close-map" aria-label="Close story list">✖️</button>
       <div id="story-grid"></div>
     </div>
-    <!-- Onboarding Modal -->
-    <div id="onboarding-modal" class="modal hidden">
-      <div class="modal-content">
-        <h2>Welcome to Fun Phonics Adventure! 🎉</h2>
-        <p>Choose a story, listen to narration, or read aloud to earn stars!</p>
-        <button id="close-onboarding">Got it!</button>
-      </div>
-    </div>
-    <!-- Stats Modal -->
-    <div id="stats-modal" class="modal hidden">
-      <div class="modal-content">
-        <h2>Your Stats 📊</h2>
-        <p id="stats-content">Stories Completed: 0<br>Stars Earned: 0</p>
-        <button id="close-stats">Close</button>
-      </div>
-    </div>
   </div>
 
   <audio id="whoosh-sound" src="https://www.soundjay.com/transportation/sounds/airplane-flyby-01.mp3" preload></audio>
   <audio id="cheer-sound" src="https://www.soundjay.com/human/cheer-01.mp3" preload></audio>
-  <audio id="boing-sound" src="https://bigsoundbank.com/UPLOAD/mp3/0015.mp3" preload></audio> <!-- Valid boing sound -->
 
   <noscript>
     Oops! This app needs JavaScript enabled to run.
