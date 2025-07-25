@@ -33,7 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
         bookSelect = document.getElementById('book-select'),
         darkModeBtn = document.getElementById('dark-mode-btn'),
         fullscreenBtn = document.getElementById('fullscreen-btn'),
-        starCount = document.getElementById('star-count');
+        starCount = document.getElementById('star-count'),
+        topBtn = document.getElementById('top-btn'),
+        loadingOverlay = document.getElementById('loading-overlay');
 
   // Speeds and labels
   const speeds = [0.3, 0.6, 0.9, 1.2];
@@ -47,7 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     image: "placeholder.png"
   };
 
-  // Load stories JSON
+ // Show loading overlay and load stories JSON
+  loadingOverlay?.classList.remove('hidden');
   fetch('passages.json')
     .then(response => response.json())
     .then(data => {
@@ -72,10 +75,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
       loadBook();
+      loadingOverlay?.classList.add('hidden');
     })
     .catch(err => {
       console.error(err);
       document.getElementById('page').textContent = 'Oops! Unable to load stories.';
+       loadingOverlay?.classList.add('hidden');
     });
 
   function loadBook() {
@@ -148,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     wordRanges = [];
 
     const imgPath = p.image ? `images/${p.image}` : '';
-    const imgTag = imgPath ? `<img id="passage-image" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}">` : '';
+   const imgTag = imgPath ? `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}">` : '';
     const formattedText = formatText(p.text);
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
@@ -588,6 +593,13 @@ document.addEventListener('DOMContentLoaded', () => {
     storyMap.classList.remove('hidden');
   });
   closeMapBtn?.addEventListener('click', () => storyMap.classList.add('hidden'));
+
+  topBtn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  window.addEventListener('scroll', () => {
+    if (!topBtn) return;
+    if (window.scrollY > 200) topBtn.classList.add('show');
+    else topBtn.classList.remove('show');
+  });
 
   window.addEventListener('beforeunload', () => {
     if (isPlaying || isPaused) {
