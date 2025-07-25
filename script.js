@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
       isPaused = false,
       recognition = null,
       accuracyScore = 0,
-      currentWordIndex = 0;
+     currentWordIndex = 0,
+      micPermissionGranted = false;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
         speedBtn = document.getElementById('speed-btn'),
@@ -548,6 +549,29 @@ document.addEventListener('DOMContentLoaded', () => {
     updateReadProgress(correct / expected.length);
     if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
     highlightNextWord(nextIndex); // Highlight the first unmatched word
+  }
+
+  function startVoiceCapture() {
+    if (!micPermissionGranted) {
+      micPermissionGranted = confirm('Allow microphone access to practice reading aloud?');
+      if (!micPermissionGranted) return;
+    }
+    if (!recognition) initVoiceCapture();
+    try {
+      recognition?.start();
+    } catch (err) {
+      console.error('Unable to start voice capture:', err);
+    }
+  }
+
+  function stopVoiceCapture() {
+    try {
+      recognition?.stop();
+    } catch (err) {
+      console.error('Unable to stop voice capture:', err);
+    }
+    feedbackDiv.textContent = '';
+    document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
   }
 
   speedBtn.addEventListener('click', (e) => {
