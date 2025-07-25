@@ -13,9 +13,9 @@
     <div class="banner" aria-label="Fun Phonics Adventure Banner">
       <h1 class="banner-title">Fun Phonics Adventure! 🎉</h1>
       <div class="banner-characters">
-        <div class="book-character"></div>
-        <div class="cat-character"></div>
-        <div class="star-character"></div>
+        <div class="book-character" role="img" aria-label="Book"></div>
+        <div class="cat-character" role="img" aria-label="Cat"></div>
+        <div class="star-character" role="img" aria-label="Star"></div>
       </div>
     </div>
     <h1 class="title" style="display: none;">Fun Phonics Adventure! 🎉</h1> <!-- Hidden original title -->
@@ -61,7 +61,10 @@
       <div id="story-grid"></div>
     </div>
   </div>
-
+<button id="top-btn" aria-label="Back to top">⬆️</button>
+  <div id="loading-overlay" class="hidden" aria-label="Loading">
+    <div class="loader"></div>
+  </div>
   <audio id="whoosh-sound" src="https://www.soundjay.com/transportation/sounds/airplane-flyby-01.mp3" preload></audio>
   <audio id="cheer-sound" src="https://www.soundjay.com/human/cheer-01.mp3" preload></audio>
 
