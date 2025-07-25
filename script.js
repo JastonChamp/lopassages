@@ -74,8 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
       loadBook();
     })
     .catch(err => {
-      console.error('Fetch error:', err);
-      document.getElementById('page').textContent = 'Oops! Unable to load stories. Check console for details.';
+      console.error(err);
+      document.getElementById('page').textContent = 'Oops! Unable to load stories.';
     });
 
   function loadBook() {
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function wrapWords(container) {
     Array.from(container.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
-        const parts = node.textContent.split(/(\s+/),
+        const parts = node.textContent.split(/(\s+)/),
               frag = document.createDocumentFragment();
         parts.forEach(tok => {
           if (/^\s+$/.test(tok)) {
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'story-card';
       if (idx > stars) card.classList.add('locked');
-      const imgPath = p.image ? `images/${p.image}` : '';
+      const imgPath = p.image ? `images/${p.image}` : 'https://via.placeholder.com/120x80.png?text=No+Image'; // Fallback image
       card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
       card.addEventListener('click', () => {
         if (idx <= stars) {
