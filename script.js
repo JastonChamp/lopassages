@@ -11,7 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
       charPos = 0,
       isPlaying = false,
       isPaused = false,
-      recognition = null;
+      recognition = null,
+      accuracyScore = 0,
+      storiesCompleted = 0;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
         boingSound = document.getElementById('boing-sound'),
@@ -31,25 +33,42 @@ document.addEventListener('DOMContentLoaded', () => {
         seekRange = document.getElementById('seek-range'),
         bookSelect = document.getElementById('book-select'),
         darkModeBtn = document.getElementById('dark-mode-btn'),
-        starCount = document.getElementById('star-count'),
+        highContrastBtn = document.getElementById('high-contrast-btn'),
+        statsBtn = document.getElementById('stats-btn'),
+        starIcons = document.getElementById('star-icons'),
         onboardingModal = document.getElementById('onboarding-modal'),
-        closeOnboarding = document.getElementById('close-onboarding');
+        closeOnboarding = document.getElementById('close-onboarding'),
+        statsModal = document.getElementById('stats-modal'),
+        closeStats = document.getElementById('close-stats'),
+        statsContent = document.getElementById('stats-content');
 
-  // Initialize button text with default speed
-  const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
-  const labels = ['🐢', '🚶', '🏃', '🚀']; // Icon representation for speeds
-  if (!speeds.includes(currentSpeed)) currentSpeed = 0.6; // Fallback
+  // Speeds and labels
+  const speeds = [0.3, 0.6, 0.9, 1.2];
+  const labels = ['🐢', '🚶', '🏃', '🚀'];
   speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
-  console.log(`Initial speed set to: ${currentSpeed}, Label: ${labels[speeds.indexOf(currentSpeed)]}`); // Debug initial state
 
-  // Load the stories JSON and default to Book 1
+  // Placeholder data for empty books
+  const placeholderStory = {
+    title: "Coming Soon!",
+    text: "More adventures are on the way! Check back later. 🎉",
+    image: "placeholder.png"
+  };
+
+  // Offline handling
+  if (!navigator.onLine) {
+    document.getElementById('page').textContent = 'Offline mode: Please connect to the internet to load stories.';
+  }
+
+  // Load stories JSON
   fetch('passages.json')
-    .then(response => {
-      if (!response.ok) throw new Error('Failed to load stories');
-      return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-      categories = data || {};
+      categories = data;
+      Object.keys(categories).forEach(key => {
+        if (categories[key].length === 0) {
+          categories[key] = [placeholderStory]; // Add placeholder for empty books
+        }
+      });
       if (bookSelect) {
         bookSelect.innerHTML = '';
         Object.keys(categories).forEach(key => {
@@ -61,43 +80,90 @@ document.addEventListener('DOMContentLoaded', () => {
         bookSelect.value = currentBook;
         bookSelect.addEventListener('change', () => {
           currentBook = bookSelect.value;
-          passages = categories[currentBook] || [];
-          document.getElementById('total-stories').textContent = passages.length;
-          document.documentElement.style.setProperty('--total', passages.length);
-          buildStoryMap();
-          showPassage(0);
-          updateNavButtons();
+          loadBook();
         });
       }
-      passages = categories[currentBook] || [];
-      if (!passages.length) {
-        console.warn('No passages found for current book:', currentBook);
-        document.getElementById('page').textContent = 'No stories available.';
-        return;
-      }
-      document.getElementById('total-stories').textContent = passages.length;
-      document.documentElement.style.setProperty('--total', passages.length);
-      buildStoryMap();
-      const saved = localStorage.getItem('progress');
-      if (saved) {
-        const { story, char } = JSON.parse(saved);
-        if (story >= 0 && story < passages.length) {
-          showPassage(story);
-          charPos = char || 0;
-          const textLength = passages[story]?.text?.length || 1; // Prevent division by zero
-          updateReadProgress(charPos / textLength);
-        } else {
-          showPassage(0);
-        }
-      } else {
-        showPassage(0);
-      }
-      updateNavButtons();
+      loadBook();
     })
     .catch(err => {
       console.error(err);
       document.getElementById('page').textContent = 'Oops! Unable to load stories.';
     });
+
+  function loadBook() {
+    passages = categories[currentBook] || [];
+    document.getElementById('total-stories').textContent = passages.length;
+    document.documentElement.style.setProperty('--total', passages.length);
+    buildStoryMap();
+    showPassage(0);
+    updateNavButtons();
+  }
+
+  // Show onboarding if first time
+  if (!localStorage.getItem('onboardingShown')) {
+    onboardingModal.classList.remove('hidden');
+    localStorage.setItem('onboardingShown', 'true');
+  }
+  closeOnboarding.addEventListener('click', () => onboardingModal.classList.add('hidden'));
+
+  // Dark mode toggle
+  darkModeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+  });
+
+  // High-contrast mode toggle
+  highContrastBtn.addEventListener('click', () => {
+    document.body.classList.toggle('high-contrast');
+  });
+
+  // Stats button and modal
+  statsBtn.addEventListener('click', () => {
+    statsContent.innerHTML = `Stories Completed: ${storiesCompleted}<br>Stars Earned: ${stars}`;
+    statsModal.classList.remove('hidden');
+  });
+  closeStats.addEventListener('click', () => statsModal.classList.add('hidden'));
+
+  // Button feedback
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      boingSound.play();
+      btn.style.transform = 'scale(1.1)';
+      setTimeout(() => btn.style.transform = 'scale(1)', 200);
+    });
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn').disabled) flipTo(currentIndex - 1, 'prev');
+    if (e.key === 'ArrowRight' && !document.getElementById('next-btn').disabled) flipTo(currentIndex + 1, 'next');
+  });
+
+  // Unlock logic (example: book2 after 5 stars)
+  function isBookUnlocked(book) {
+    if (book === 'book1') return true;
+    if (book === 'book2' && stars >= 5) return true;
+    return false; // Add more as needed
+  }
+
+  // Update book select to disable locked
+  bookSelect.addEventListener('change', () => {
+    if (!isBookUnlocked(currentBook)) {
+      alert('Complete more stories in previous books to unlock!');
+      bookSelect.value = 'book1';
+      currentBook = 'book1';
+    }
+    loadBook();
+  });
+
+  // Render star icons
+  function updateStars() {
+    starIcons.innerHTML = '';
+    for (let i = 0; i < passages.length; i++) {
+      const star = document.createElement('span');
+      star.textContent = i < stars ? '⭐' : '☆';
+      starIcons.appendChild(star);
+    }
+  }
 
   // Render a passage by index
   function showPassage(i, container = document.getElementById('page')) {
@@ -113,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     wordRanges = [];
 
     const imgPath = p.image ? `images/${p.image}` : '';
-    const imgTag = imgPath ? `<img id="passage-image" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">` : '';
+    const imgTag = imgPath ? `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')} illustration" onerror="this.style.display='none';">` : '';
     const formattedText = formatText(p.text);
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
@@ -134,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateControlButtons();
     updateReadProgress(0);
     charPos = 0;
+    updateProgressTooltips();
   }
 
   // Wrap each word in a <span class="word">
@@ -159,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Define traverse function to fix the syntax error and handle cumulative
+  // Traverse function for building ranges
   function traverse(node, cumulative) {
     if (node.nodeType === Node.TEXT_NODE) {
       cumulative += node.textContent.length;
@@ -188,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cumulative += node.textContent.length;
         return;
       }
-   
       if (node.nodeType === Node.ELEMENT_NODE) {
         if (node.classList.contains('word')) {
           const len = node.textContent.length;
@@ -242,6 +308,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (seekRange) {
       seekRange.value = isNaN(progress) ? 0 : progress * 100;
     }
+    updateProgressTooltips();
+  }
+
+  function updateProgressTooltips() {
+    const storyProgress = ((currentIndex + 1) / passages.length) * 100;
+    document.getElementById('progress-bar').title = `Story Progress: ${storyProgress.toFixed(0)}%`;
+    const readingProgress = (charPos / (passages[currentIndex]?.text?.length || 1) * 100).toFixed(0);
+    document.getElementById('read-progress-bar').title = `Reading Progress: ${readingProgress}%`;
   }
 
   function buildStoryMap() {
@@ -250,11 +324,16 @@ document.addEventListener('DOMContentLoaded', () => {
     passages.forEach((p, idx) => {
       const card = document.createElement('div');
       card.className = 'story-card';
+      if (idx > stars) card.classList.add('locked');
       const imgPath = p.image ? `images/${p.image}` : '';
-      card.innerHTML = `<img src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
+      card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
       card.addEventListener('click', () => {
-        storyMap.classList.add('hidden');
-        flipTo(idx, idx > currentIndex ? 'next' : 'prev');
+        if (idx <= stars) {
+          storyMap.classList.add('hidden');
+          flipTo(idx, idx > currentIndex ? 'next' : 'prev');
+        } else {
+          alert('Earn more stars to unlock!');
+        }
       });
       storyGrid.appendChild(card);
     });
@@ -283,31 +362,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setTimeout(() => oldPg.remove(), 500);
     }, 300);
+    storiesCompleted++;
+    updateProgressTooltips();
   }
 
   // Earn a star
   document.getElementById('star-btn').addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
-      document.getElementById('star-count').textContent = stars;
+      updateStars();
       cheerSound.play();
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       updateNavButtons();
+      buildStoryMap();
     }
   });
 
   // Adjust reading speed
   function adjustSpeed() {
     const idx = speeds.indexOf(currentSpeed);
-    if (idx === -1) {
-      console.error('Current speed not found in speeds array:', currentSpeed);
-      currentSpeed = 0.6; // Fallback to default
-    }
     const nextIndex = (idx + 1) % speeds.length;
     currentSpeed = speeds[nextIndex];
-    const label = labels[nextIndex] || '';
-    speedBtn.textContent = label;
-    console.log(`Speed adjusted to: ${currentSpeed}, Label: ${label}`); // Enhanced debug
+    speedBtn.textContent = labels[nextIndex];
   }
 
   function startNarration(start = 0) {
@@ -329,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
           range.span.classList.add('speaking');
           currentSpeakingSpan = range.span;
         }
-        const textLength = text.length || 1; // Prevent division by zero
+        const textLength = text.length || 1;
         updateReadProgress(globalIndex / textLength);
         localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
       }
@@ -457,67 +533,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+    accuracyScore = (correct / expected.length) * 100;
+    feedbackDiv.textContent = `${transcript} | Score: ${accuracyScore.toFixed(0)}%`;
+    feedbackDiv.style.color = accuracyScore > 80 ? 'green' : 'red';
     updateReadProgress(correct / expected.length);
+    if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
   }
 
-  // Speed button with enhanced touch support
   speedBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    console.log('Click event fired');
     adjustSpeed();
   });
   speedBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    console.log('Touchstart event fired');
     adjustSpeed();
     e.stopPropagation();
   }, { passive: false });
   speedBtn.addEventListener('touchend', (e) => {
     e.preventDefault();
-    console.log('Touchend event fired');
     adjustSpeed();
   }, { passive: false });
 
-  // Prev/Next buttons
   document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn')?.addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
-
-  // Set up Web Speech API reading with word highlighting
-  function readAloud() {
-    // Stop any ongoing speech before starting a new utterance
-    window.speechSynthesis.cancel();
-
-    const container = document.getElementById('passage-text');
-    if (!container) return;
-
-    const text = container.textContent;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.8; // steady pace for kids
-
-    utterance.onboundary = (e) => {
-      if (e.name === 'word') {
-        // remove highlight from previously spoken word
-        if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
-
-        // find the span that contains the char index of this boundary
-        const range = wordRanges.find(r => e.charIndex >= r.start && e.charIndex <= r.end);
-        if (range) {
-          range.span.classList.add('speaking');
-          currentSpeakingSpan = range.span;
-        }
-      }
-    };
-
-    utterance.onend = () => {
-      // clean up any leftover highlight when the utterance finishes
-      if (currentSpeakingSpan) {
-        currentSpeakingSpan.classList.remove('speaking');
-        currentSpeakingSpan = null;
-      }
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }
 
   playBtn?.addEventListener('click', () => startNarration(charPos));
   pauseBtn?.addEventListener('click', pauseNarration);
@@ -528,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
   micBtn?.addEventListener('click', startVoiceCapture);
   micStopBtn?.addEventListener('click', stopVoiceCapture);
   if (seekRange) {
-    seekRange.value = 0; // Initialize seek range
+    seekRange.value = 0;
     seekRange.addEventListener('change', (e) => {
       const pos = Math.floor((e.target.value / 100) * (passages[currentIndex]?.text?.length || 1));
       charPos = pos;
