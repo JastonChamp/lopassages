@@ -35,6 +35,7 @@
     <div id="controls">
       <!-- Navigation Group -->
       <div class="control-group nav-group">
+        <select id="book-select" aria-label="Choose book"></select>
         <button id="map-btn" aria-label="Choose a story">📚</button>
         <button id="prev-btn" disabled>Back ⬅️</button>
         <button id="next-btn" disabled>Next ➡️</button>
@@ -57,7 +58,7 @@
     </div>
 
     <div id="star-counter">
-      Stars: <div id="star-icons"></div>
+      Stars: <span id="star-count">0</span>
     </div>
     <div id="feedback" aria-live="polite"></div>
     <div id="seek-container">
@@ -79,7 +80,7 @@
 
   <audio id="whoosh-sound" src="https://www.soundjay.com/transportation/sounds/airplane-flyby-01.mp3" preload></audio>
   <audio id="cheer-sound" src="https://www.soundjay.com/human/cheer-01.mp3" preload></audio>
-  <audio id="boing-sound" src="https://www.soundjay.com/buttons/boing.mp3" preload></audio> <!-- New sound for button feedback -->
+  <audio id="boing-sound" src="https://bigsoundbank.com/UPLOAD/mp3/0015.mp3" preload></audio> <!-- Fixed with a valid boing sound URL -->
 
   <noscript>
     Oops! This app needs JavaScript enabled to run.
