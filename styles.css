@@ -1,19 +1,31 @@
-/* Root variables for progress bar */
 :root {
   --current: 1;
   --total: 13;
+  --primary: #FF4500; /* Orange */
+  --secondary: #87CEEB; /* Blue */
+  --accent: #FFD700; /* Gold */
+  --background-opacity: 0.1;
 }
 
-/* Body & container */
 body {
-  font-family: 'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive, sans-serif;
-  background: #fff url('https://www.transparenttextures.com/patterns/polka-dots.png');
+  font-family: 'Comic Neue', sans-serif;
+  background: #fff url('https://www.transparenttextures.com/patterns/polka-dots.png') repeat;
+  background-opacity: var(--background-opacity);
   margin: 0;
   padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+}
+
+.dark-mode {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-mode #game-container {
+  background: rgba(0,0,0,0.95);
 }
 
 #game-container {
@@ -24,28 +36,29 @@ body {
   background: rgba(255,255,255,0.95);
   border-radius: 15px;
   box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  margin: 30px; /* Increased for whitespace */
 }
 
-/* Banner Styles */
+/* Banner with softened gradient */
 .banner {
   width: 100%;
   height: 200px;
-  background: linear-gradient(to bottom, #87CEEB 60%, #98FB98); /* Blue sky to green hills */
+  background: linear-gradient(to bottom, var(--secondary) 60%, #E0FFFF);
   position: relative;
   overflow: hidden;
-  border-bottom: 5px solid #FFD700; /* Gold border for playfulness */
+  border-bottom: 5px solid var(--accent);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px; /* Space below banner */
+  margin-bottom: 20px;
 }
 
 .banner-title {
-  font-family: 'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive, sans-serif;
+  font-family: 'Baloo 2', cursive;
   font-size: 2.5em;
-  color: #FFD700;
+  color: var(--accent);
   text-shadow: 2px 2px 4px #000;
   animation: wave 3s infinite ease-in-out;
   position: relative;
@@ -97,8 +110,8 @@ body {
 /* Title bounce (hidden, but kept for reference) */
 .title {
   font-size: 2.8em;
-  color: #ff4500;
-  text-shadow: 3px 3px #ffd700;
+  color: var(--primary);
+  text-shadow: 3px 3px var(--accent);
   margin-bottom: 10px;
   animation: bounce 2s infinite ease-out;
   display: none; /* Hidden since banner takes over */
@@ -144,7 +157,7 @@ body {
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(to right, #87CEEB, #4CAF50);
+  background: linear-gradient(to right, var(--secondary), #4CAF50);
   width: calc(var(--progress, 0) * 100%);
   transition: width 0.3s ease;
 }
@@ -154,14 +167,14 @@ body {
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(to right, #ff69b4, #ff4500);
+  background: linear-gradient(to right, #ff69b4, var(--primary));
   width: calc((var(--current) / var(--total)) * 100%);
   transition: width 0.5s ease;
 }
 
 #story-progress {
   font-size: 1.4em;
-  color: #4682b4;
+  color: var(--secondary);
   font-weight: bold;
 }
 
