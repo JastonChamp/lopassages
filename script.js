@@ -74,8 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
       loadBook();
     })
     .catch(err => {
-      console.error(err);
-      document.getElementById('page').textContent = 'Oops! Unable to load stories.';
+      console.error('Fetch error:', err);
+      document.getElementById('page').textContent = 'Oops! Unable to load stories. Check console for details.';
     });
 
   function loadBook() {
