@@ -11,9 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
       charPos = 0,
       isPlaying = false,
       isPaused = false,
-      recognition = null;
+      recognition = null,
+      accuracyScore = 0;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
+        boingSound = document.getElementById('boing-sound'),
         speedBtn = document.getElementById('speed-btn'),
         playBtn = document.getElementById('play-btn'),
         pauseBtn = document.getElementById('pause-btn'),
@@ -28,14 +30,24 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackDiv = document.getElementById('feedback'),
         readProgressBar = document.getElementById('read-progress-bar'),
         seekRange = document.getElementById('seek-range'),
-        bookSelect = document.getElementById('book-select');
+        bookSelect = document.getElementById('book-select'),
+        darkModeBtn = document.getElementById('dark-mode-btn'),
+        starIcons = document.getElementById('star-icons'),
+        onboardingModal = document.getElementById('onboarding-modal'),
+        closeOnboarding = document.getElementById('close-onboarding');
 
   // Initialize button text with default speed
   const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
   const labels = ['🐢', '🚶', '🏃', '🚀']; // Icon representation for speeds
   if (!speeds.includes(currentSpeed)) currentSpeed = 0.6; // Fallback
   speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
-  console.log(`Initial speed set to: ${currentSpeed}, Label: ${labels[speeds.indexOf(currentSpeed)]}`); // Debug initial state
+
+  // Placeholder story for empty books
+  const placeholderStory = {
+    title: "Coming Soon!",
+    text: "More adventures are on the way! Check back later. 🎉",
+    image: "placeholder.png"
+  };
 
   // Load the stories JSON and default to Book 1
   fetch('passages.json')
@@ -45,6 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(data => {
       categories = data || {};
+      // Add placeholders for empty books
+      Object.keys(categories).forEach(key => {
+        if (categories[key].length === 0) {
+          categories[key] = [placeholderStory];
+        }
+      });
       if (bookSelect) {
         bookSelect.innerHTML = '';
         Object.keys(categories).forEach(key => {
@@ -56,6 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
         bookSelect.value = currentBook;
         bookSelect.addEventListener('change', () => {
           currentBook = bookSelect.value;
+          if (!isBookUnlocked(currentBook)) {
+            alert('Complete more stories in previous books to unlock!');
+            bookSelect.value = 'book1';
+            currentBook = 'book1';
+          }
           passages = categories[currentBook] || [];
           document.getElementById('total-stories').textContent = passages.length;
           document.documentElement.style.setProperty('--total', passages.length);
@@ -79,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (story >= 0 && story < passages.length) {
           showPassage(story);
           charPos = char || 0;
-          const textLength = passages[story]?.text?.length || 1; // Prevent division by zero
+          const textLength = passages[story]?.text?.length || 1;
           updateReadProgress(charPos / textLength);
         } else {
           showPassage(0);
@@ -88,11 +111,47 @@ document.addEventListener('DOMContentLoaded', () => {
         showPassage(0);
       }
       updateNavButtons();
+      updateStars();
     })
     .catch(err => {
       console.error(err);
       document.getElementById('page').textContent = 'Oops! Unable to load stories.';
     });
+
+  // Show onboarding if first time
+  if (!localStorage.getItem('onboardingShown')) {
+    onboardingModal.classList.remove('hidden');
+    localStorage.setItem('onboardingShown', 'true');
+  }
+  closeOnboarding.addEventListener('click', () => onboardingModal.classList.add('hidden'));
+
+  // Dark mode toggle
+  darkModeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+  });
+
+  // Button feedback (scale and sound)
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      boingSound.play();
+      btn.style.transform = 'scale(1.1)';
+      setTimeout(() => btn.style.transform = 'scale(1)', 200);
+    });
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn').disabled) flipTo(currentIndex - 1, 'prev');
+    if (e.key === 'ArrowRight' && !document.getElementById('next-btn').disabled) flipTo(currentIndex + 1, 'next');
+  });
+
+  // Book unlock logic (example: book2 after 5 stars)
+  function isBookUnlocked(book) {
+    if (book === 'book1') return true;
+    if (book === 'book2' && stars >= 5) return true;
+    // Add more for book3-5 as needed
+    return false;
+  }
 
   // Render a passage by index
   function showPassage(i, container = document.getElementById('page')) {
@@ -108,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     wordRanges = [];
 
     const imgPath = p.image ? `images/${p.image}` : '';
-    const imgTag = imgPath ? `<img id="passage-image" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}" onerror="this.style.display='none';">` : '';
+    const imgTag = imgPath ? `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')} illustration" onerror="this.style.display='none';">` : '';
     const formattedText = formatText(p.text);
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
@@ -154,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Define traverse function to fix the syntax error and handle cumulative
+  // Traverse function for building ranges
   function traverse(node, cumulative) {
     if (node.nodeType === Node.TEXT_NODE) {
       cumulative += node.textContent.length;
@@ -183,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cumulative += node.textContent.length;
         return;
       }
-   
       if (node.nodeType === Node.ELEMENT_NODE) {
         if (node.classList.contains('word')) {
           const len = node.textContent.length;
@@ -239,17 +297,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Update star icons
+  function updateStars() {
+    starIcons.innerHTML = '';
+    for (let i = 0; i < passages.length; i++) {
+      const star = document.createElement('span');
+      star.textContent = i < stars ? '⭐' : '☆';
+      starIcons.appendChild(star);
+    }
+  }
+
   function buildStoryMap() {
     if (!storyGrid) return;
     storyGrid.innerHTML = '';
     passages.forEach((p, idx) => {
       const card = document.createElement('div');
       card.className = 'story-card';
+      if (idx > stars) card.classList.add('locked');
       const imgPath = p.image ? `images/${p.image}` : '';
-      card.innerHTML = `<img src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
+      card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
       card.addEventListener('click', () => {
-        storyMap.classList.add('hidden');
-        flipTo(idx, idx > currentIndex ? 'next' : 'prev');
+        if (idx <= stars) {
+          storyMap.classList.add('hidden');
+          flipTo(idx, idx > currentIndex ? 'next' : 'prev');
+        } else {
+          alert('Earn more stars to unlock!');
+        }
       });
       storyGrid.appendChild(card);
     });
@@ -284,25 +357,20 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('star-btn').addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
-      document.getElementById('star-count').textContent = stars;
+      updateStars();
       cheerSound.play();
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       updateNavButtons();
+      buildStoryMap(); // Refresh map for unlocks
     }
   });
 
   // Adjust reading speed
   function adjustSpeed() {
     const idx = speeds.indexOf(currentSpeed);
-    if (idx === -1) {
-      console.error('Current speed not found in speeds array:', currentSpeed);
-      currentSpeed = 0.6; // Fallback to default
-    }
     const nextIndex = (idx + 1) % speeds.length;
     currentSpeed = speeds[nextIndex];
-    const label = labels[nextIndex] || '';
-    speedBtn.textContent = label;
-    console.log(`Speed adjusted to: ${currentSpeed}, Label: ${label}`); // Enhanced debug
+    speedBtn.textContent = labels[nextIndex];
   }
 
   function startNarration(start = 0) {
@@ -324,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
           range.span.classList.add('speaking');
           currentSpeakingSpan = range.span;
         }
-        const textLength = text.length || 1; // Prevent division by zero
+        const textLength = text.length || 1;
         updateReadProgress(globalIndex / textLength);
         localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
       }
@@ -415,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .join(' ');
       const storyText = passages[currentIndex]?.text || '';
       highlightReading(transcript, storyText);
-      if (feedbackDiv) feedbackDiv.textContent = transcript;
+      if (feedbackDiv) feedbackDiv.textContent = `${transcript} | Score: ${accuracyScore.toFixed(0)}%`;
     };
     recognition.onstart = () => {
       if (micBtn) micBtn.disabled = true;
@@ -453,67 +521,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+    accuracyScore = (correct / expected.length) * 100;
     updateReadProgress(correct / expected.length);
+    if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
   }
 
-  // Speed button with enhanced touch support
+  // Speed button
   speedBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    console.log('Click event fired');
     adjustSpeed();
   });
   speedBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    console.log('Touchstart event fired');
     adjustSpeed();
     e.stopPropagation();
   }, { passive: false });
   speedBtn.addEventListener('touchend', (e) => {
     e.preventDefault();
-    console.log('Touchend event fired');
     adjustSpeed();
   }, { passive: false });
 
   // Prev/Next buttons
   document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn')?.addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
-
-  // Set up Web Speech API reading with word highlighting
-  function readAloud() {
-    // Stop any ongoing speech before starting a new utterance
-    window.speechSynthesis.cancel();
-
-    const container = document.getElementById('passage-text');
-    if (!container) return;
-
-    const text = container.textContent;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.8; // steady pace for kids
-
-    utterance.onboundary = (e) => {
-      if (e.name === 'word') {
-        // remove highlight from previously spoken word
-        if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
-
-        // find the span that contains the char index of this boundary
-        const range = wordRanges.find(r => e.charIndex >= r.start && e.charIndex <= r.end);
-        if (range) {
-          range.span.classList.add('speaking');
-          currentSpeakingSpan = range.span;
-        }
-      }
-    };
-
-    utterance.onend = () => {
-      // clean up any leftover highlight when the utterance finishes
-      if (currentSpeakingSpan) {
-        currentSpeakingSpan.classList.remove('speaking');
-        currentSpeakingSpan = null;
-      }
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }
 
   playBtn?.addEventListener('click', () => startNarration(charPos));
   pauseBtn?.addEventListener('click', pauseNarration);
@@ -524,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
   micBtn?.addEventListener('click', startVoiceCapture);
   micStopBtn?.addEventListener('click', stopVoiceCapture);
   if (seekRange) {
-    seekRange.value = 0; // Initialize seek range
+    seekRange.value = 0;
     seekRange.addEventListener('change', (e) => {
       const pos = Math.floor((e.target.value / 100) * (passages[currentIndex]?.text?.length || 1));
       charPos = pos;
