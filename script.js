@@ -12,8 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
       isPlaying = false,
       isPaused = false,
       recognition = null,
-      accuracyScore = 0,
-      storiesCompleted = 0;
+      accuracyScore = 0;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
         boingSound = document.getElementById('boing-sound'),
@@ -33,40 +32,35 @@ document.addEventListener('DOMContentLoaded', () => {
         seekRange = document.getElementById('seek-range'),
         bookSelect = document.getElementById('book-select'),
         darkModeBtn = document.getElementById('dark-mode-btn'),
-        highContrastBtn = document.getElementById('high-contrast-btn'),
-        statsBtn = document.getElementById('stats-btn'),
         starIcons = document.getElementById('star-icons'),
         onboardingModal = document.getElementById('onboarding-modal'),
-        closeOnboarding = document.getElementById('close-onboarding'),
-        statsModal = document.getElementById('stats-modal'),
-        closeStats = document.getElementById('close-stats'),
-        statsContent = document.getElementById('stats-content');
+        closeOnboarding = document.getElementById('close-onboarding');
 
-  // Speeds and labels
-  const speeds = [0.3, 0.6, 0.9, 1.2];
-  const labels = ['🐢', '🚶', '🏃', '🚀'];
+  // Initialize button text with default speed
+  const speeds = [0.3, 0.6, 0.9, 1.2]; // Very Slow, Slow, Normal, Fast
+  const labels = ['🐢', '🚶', '🏃', '🚀']; // Icon representation for speeds
+  if (!speeds.includes(currentSpeed)) currentSpeed = 0.6; // Fallback
   speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
 
-  // Placeholder data for empty books
+  // Placeholder story for empty books
   const placeholderStory = {
     title: "Coming Soon!",
     text: "More adventures are on the way! Check back later. 🎉",
     image: "placeholder.png"
   };
 
-  // Offline handling
-  if (!navigator.onLine) {
-    document.getElementById('page').textContent = 'Offline mode: Please connect to the internet to load stories.';
-  }
-
-  // Load stories JSON
+  // Load the stories JSON and default to Book 1
   fetch('passages.json')
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to load stories');
+      return response.json();
+    })
     .then(data => {
-      categories = data;
+      categories = data || {};
+      // Add placeholders for empty books
       Object.keys(categories).forEach(key => {
         if (categories[key].length === 0) {
-          categories[key] = [placeholderStory]; // Add placeholder for empty books
+          categories[key] = [placeholderStory];
         }
       });
       if (bookSelect) {
@@ -80,24 +74,49 @@ document.addEventListener('DOMContentLoaded', () => {
         bookSelect.value = currentBook;
         bookSelect.addEventListener('change', () => {
           currentBook = bookSelect.value;
-          loadBook();
+          if (!isBookUnlocked(currentBook)) {
+            alert('Complete more stories in previous books to unlock!');
+            bookSelect.value = 'book1';
+            currentBook = 'book1';
+          }
+          passages = categories[currentBook] || [];
+          document.getElementById('total-stories').textContent = passages.length;
+          document.documentElement.style.setProperty('--total', passages.length);
+          buildStoryMap();
+          showPassage(0);
+          updateNavButtons();
         });
       }
-      loadBook();
+      passages = categories[currentBook] || [];
+      if (!passages.length) {
+        console.warn('No passages found for current book:', currentBook);
+        document.getElementById('page').textContent = 'No stories available.';
+        return;
+      }
+      document.getElementById('total-stories').textContent = passages.length;
+      document.documentElement.style.setProperty('--total', passages.length);
+      buildStoryMap();
+      const saved = localStorage.getItem('progress');
+      if (saved) {
+        const { story, char } = JSON.parse(saved);
+        if (story >= 0 && story < passages.length) {
+          showPassage(story);
+          charPos = char || 0;
+          const textLength = passages[story]?.text?.length || 1;
+          updateReadProgress(charPos / textLength);
+        } else {
+          showPassage(0);
+        }
+      } else {
+        showPassage(0);
+      }
+      updateNavButtons();
+      updateStars();
     })
     .catch(err => {
       console.error(err);
       document.getElementById('page').textContent = 'Oops! Unable to load stories.';
     });
-
-  function loadBook() {
-    passages = categories[currentBook] || [];
-    document.getElementById('total-stories').textContent = passages.length;
-    document.documentElement.style.setProperty('--total', passages.length);
-    buildStoryMap();
-    showPassage(0);
-    updateNavButtons();
-  }
 
   // Show onboarding if first time
   if (!localStorage.getItem('onboardingShown')) {
@@ -111,19 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.toggle('dark-mode');
   });
 
-  // High-contrast mode toggle
-  highContrastBtn.addEventListener('click', () => {
-    document.body.classList.toggle('high-contrast');
-  });
-
-  // Stats button and modal
-  statsBtn.addEventListener('click', () => {
-    statsContent.innerHTML = `Stories Completed: ${storiesCompleted}<br>Stars Earned: ${stars}`;
-    statsModal.classList.remove('hidden');
-  });
-  closeStats.addEventListener('click', () => statsModal.classList.add('hidden'));
-
-  // Button feedback
+  // Button feedback (scale and sound)
   document.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
       boingSound.play();
@@ -138,31 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'ArrowRight' && !document.getElementById('next-btn').disabled) flipTo(currentIndex + 1, 'next');
   });
 
-  // Unlock logic (example: book2 after 5 stars)
+  // Book unlock logic (example: book2 after 5 stars)
   function isBookUnlocked(book) {
     if (book === 'book1') return true;
     if (book === 'book2' && stars >= 5) return true;
-    return false; // Add more as needed
-  }
-
-  // Update book select to disable locked
-  bookSelect.addEventListener('change', () => {
-    if (!isBookUnlocked(currentBook)) {
-      alert('Complete more stories in previous books to unlock!');
-      bookSelect.value = 'book1';
-      currentBook = 'book1';
-    }
-    loadBook();
-  });
-
-  // Render star icons
-  function updateStars() {
-    starIcons.innerHTML = '';
-    for (let i = 0; i < passages.length; i++) {
-      const star = document.createElement('span');
-      star.textContent = i < stars ? '⭐' : '☆';
-      starIcons.appendChild(star);
-    }
+    // Add more for book3-5 as needed
+    return false;
   }
 
   // Render a passage by index
@@ -200,7 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateControlButtons();
     updateReadProgress(0);
     charPos = 0;
-    updateProgressTooltips();
   }
 
   // Wrap each word in a <span class="word">
@@ -308,14 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (seekRange) {
       seekRange.value = isNaN(progress) ? 0 : progress * 100;
     }
-    updateProgressTooltips();
-  }
-
-  function updateProgressTooltips() {
-    const storyProgress = ((currentIndex + 1) / passages.length) * 100;
-    document.getElementById('progress-bar').title = `Story Progress: ${storyProgress.toFixed(0)}%`;
-    const readingProgress = (charPos / (passages[currentIndex]?.text?.length || 1) * 100).toFixed(0);
-    document.getElementById('read-progress-bar').title = `Reading Progress: ${readingProgress}%`;
   }
 
   function buildStoryMap() {
@@ -362,8 +341,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setTimeout(() => oldPg.remove(), 500);
     }, 300);
-    storiesCompleted++;
-    updateProgressTooltips();
   }
 
   // Earn a star
@@ -374,9 +351,19 @@ document.addEventListener('DOMContentLoaded', () => {
       cheerSound.play();
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       updateNavButtons();
-      buildStoryMap();
+      buildStoryMap(); // Rebuild to unlock
     }
   });
+
+  // Update star icons
+  function updateStars() {
+    starIcons.innerHTML = '';
+    for (let i = 0; i < passages.length; i++) {
+      const star = document.createElement('span');
+      star.textContent = i < stars ? '⭐' : '☆';
+      starIcons.appendChild(star);
+    }
+  }
 
   // Adjust reading speed
   function adjustSpeed() {
@@ -480,30 +467,63 @@ document.addEventListener('DOMContentLoaded', () => {
     updateControlButtons();
   }
 
-  // Voice capture setup
+  // Voice capture setup with improvements
   function initVoiceCapture() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList;
     if (!SpeechRecognition) {
       console.warn('SpeechRecognition not supported');
+      feedbackDiv.textContent = 'Speech recognition not supported in this browser. Try Chrome.';
       return;
     }
     recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = true;
+    recognition.lang = 'en-US'; // Tune to 'en-GB' or 'en-AU' if needed for better accent match
+    recognition.continuous = true; // Improved: Continuous for longer reading
+    recognition.interimResults = true; // Improved: Real-time feedback
+    recognition.maxAlternatives = 3; // Improved: Multiple guesses for better matching
+
+    // Improved: Grammar from story words for accuracy
+    const storyText = passages[currentIndex]?.text || '';
+    const words = [...new Set(storyText.toLowerCase().split(/\s+/).filter(w => w.length > 1))]; // Unique words >1 char
+    const grammar = `#JSGF V1.0; grammar story; public <word> = ${words.join(' | ')};`;
+    if (SpeechGrammarList) {
+      const speechRecognitionList = new SpeechGrammarList();
+      speechRecognitionList.addFromString(grammar, 1);
+      recognition.grammars = speechRecognitionList;
+    }
+
     recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(r => r[0].transcript)
-        .join(' ');
-      const storyText = passages[currentIndex]?.text || '';
-      highlightReading(transcript, storyText);
+      const results = Array.from(event.results);
+      let transcript = '';
+      results.forEach(result => {
+        // Improved: Pick best alternative by checking against story text
+        let bestAlt = result[0].transcript;
+        for (let alt of result) {
+          if (storyText.toLowerCase().includes(alt.transcript.toLowerCase())) {
+            bestAlt = alt.transcript;
+            break;
+          }
+        }
+        transcript += bestAlt + ' ';
+      });
+      const storyTextCurrent = passages[currentIndex]?.text || '';
+      highlightReading(transcript.trim(), storyTextCurrent);
     };
     recognition.onstart = () => {
-      if (micBtn) micBtn.disabled = true;
-      if (micStopBtn) micStopBtn.disabled = false;
+      micBtn.disabled = true;
+      micStopBtn.disabled = false;
+      feedbackDiv.textContent = 'Listening... Speak clearly and slowly in a quiet room.';
     };
     recognition.onend = () => {
-      if (micBtn) micBtn.disabled = false;
-      if (micStopBtn) micStopBtn.disabled = true;
+      micBtn.disabled = false;
+      micStopBtn.disabled = true;
+    };
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      feedbackDiv.textContent = 'Error: ' + event.error + '. Try again - speak louder or check mic permissions.';
+    };
+    recognition.onnomatch = () => {
+      feedbackDiv.textContent = 'No match found. Try speaking slower or more clearly.';
     };
   }
 
@@ -535,7 +555,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     accuracyScore = (correct / expected.length) * 100;
     feedbackDiv.textContent = `${transcript} | Score: ${accuracyScore.toFixed(0)}%`;
-    feedbackDiv.style.color = accuracyScore > 80 ? 'green' : 'red';
     updateReadProgress(correct / expected.length);
     if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
   }
