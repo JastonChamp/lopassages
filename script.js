@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         storyGrid = document.getElementById('story-grid'),
         micBtn = document.getElementById('mic-btn'),
         micStopBtn = document.getElementById('mic-stop-btn'),
+     voiceSelect = document.getElementById('voice-select'),
         feedbackDiv = document.getElementById('feedback'),
         readProgressBar = document.getElementById('read-progress-bar'),
         seekRange = document.getElementById('seek-range'),
@@ -42,6 +43,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const speeds = [0.3, 0.6, 0.9, 1.2];
   const labels = ['🐢', '🚶', '🏃', '🚀'];
   speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
+
+   // Voice selection
+  let availableVoices = [];
+
+  function populateVoices() {
+    if (!voiceSelect) return;
+    availableVoices = speechSynthesis.getVoices();
+    voiceSelect.innerHTML = '';
+    availableVoices.forEach((v, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = v.name;
+      voiceSelect.appendChild(opt);
+    });
+    const saved = localStorage.getItem('voiceIndex');
+    if (saved && voiceSelect.options[saved]) {
+      voiceSelect.value = saved;
+    }
+  }
+
+  populateVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  voiceSelect?.addEventListener('change', () => {
+    localStorage.setItem('voiceIndex', voiceSelect.value);
+  });
 
   // Placeholder story for empty books
   const placeholderStory = {
@@ -368,7 +397,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!speakText) return;
     utter = new SpeechSynthesisUtterance(speakText);
     utter.rate = currentSpeed;
-
+if (voiceSelect && availableVoices.length) {
+      const voice = availableVoices[voiceSelect.value] || null;
+      if (voice) utter.voice = voice;
+    }
     utter.onboundary = event => {
       if (event.name === 'word') {
         const globalIndex = start + event.charIndex;
