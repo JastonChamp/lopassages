@@ -1,19 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const VERSION = '1.0'; // For caching
   let categories = {},
       passages = [],
       currentBook = 'book1',
       currentIndex = 0,
       wordRanges = [],
-      currentSpeakingSpan = null,
       stars = 0,
       currentSpeed = 0.6,
-      utter = null,
       charPos = 0,
       isPlaying = false,
       isPaused = false,
       recognition = null,
       accuracyScore = 0,
-     currentWordIndex = 0,
+      currentWordIndex = 0,
       micPermissionGranted = false;
   const whooshSound = document.getElementById('whoosh-sound'),
         cheerSound = document.getElementById('cheer-sound'),
@@ -28,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         storyGrid = document.getElementById('story-grid'),
         micBtn = document.getElementById('mic-btn'),
         micStopBtn = document.getElementById('mic-stop-btn'),
-     voiceSelect = document.getElementById('voice-select'),
+        voiceSelect = document.getElementById('voice-select'),
         feedbackDiv = document.getElementById('feedback'),
         readProgressBar = document.getElementById('read-progress-bar'),
         seekRange = document.getElementById('seek-range'),
@@ -36,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         darkModeBtn = document.getElementById('dark-mode-btn'),
         fullscreenBtn = document.getElementById('fullscreen-btn'),
         starCount = document.getElementById('star-count'),
+        starIcons = document.getElementById('star-icons'), // Added
         topBtn = document.getElementById('top-btn'),
         loadingOverlay = document.getElementById('loading-overlay');
 
@@ -44,12 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const labels = ['🐢', '🚶', '🏃', '🚀'];
   speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
 
-   // Voice selection
+  // Voice selection
   let availableVoices = [];
 
   function populateVoices() {
-    if (!voiceSelect) return;
     availableVoices = speechSynthesis.getVoices();
+    if (!voiceSelect) return;
     voiceSelect.innerHTML = '';
     availableVoices.forEach((v, i) => {
       const opt = document.createElement('option');
@@ -58,60 +58,65 @@ document.addEventListener('DOMContentLoaded', () => {
       voiceSelect.appendChild(opt);
     });
     const saved = localStorage.getItem('voiceIndex');
-    if (saved && voiceSelect.options[saved]) {
-      voiceSelect.value = saved;
-    }
+    if (saved && voiceSelect.options[saved]) voiceSelect.value = saved;
   }
 
   populateVoices();
-  if (speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = populateVoices;
-  }
+  if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
 
-  voiceSelect?.addEventListener('change', () => {
-    localStorage.setItem('voiceIndex', voiceSelect.value);
-  });
+  voiceSelect?.addEventListener('change', () => localStorage.setItem('voiceIndex', voiceSelect.value));
 
-  // Placeholder story for empty books
+  // Placeholder story
   const placeholderStory = {
     title: "Coming Soon!",
     text: "More adventures are on the way! Check back later. 🎉",
     image: "placeholder.png"
   };
 
- // Show loading overlay and load stories JSON
-  loadingOverlay?.classList.remove('hidden');
-  fetch('passages.json')
-    .then(response => response.json())
-    .then(data => {
-      categories = data;
-      Object.keys(categories).forEach(key => {
-        if (categories[key].length === 0) {
-          categories[key] = [placeholderStory];
-        }
-      });
-      if (bookSelect) {
-        bookSelect.innerHTML = '';
-        Object.keys(categories).forEach(key => {
-          const opt = document.createElement('option');
-          opt.value = key;
-          opt.textContent = key.replace('book', 'Book ');
-          bookSelect.appendChild(opt);
-        });
-        bookSelect.value = currentBook;
-        bookSelect.addEventListener('change', () => {
-          currentBook = bookSelect.value;
-          loadBook();
-        });
+  // Cache/load data
+  async function loadData() {
+    try {
+      const cached = localStorage.getItem('passages');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.version === VERSION) return parsed.data;
       }
-      loadBook();
-      loadingOverlay?.classList.add('hidden');
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById('page').textContent = 'Oops! Unable to load stories.';
-       loadingOverlay?.classList.add('hidden');
+      const response = await fetch('passages.json');
+      if (!response.ok) throw new Error('Failed to load passages');
+      const data = await response.json();
+      localStorage.setItem('passages', JSON.stringify({ version: VERSION, data }));
+      return data;
+    } catch (err) {
+      console.error('Load error:', err);
+      document.getElementById('page').textContent = 'Oops! Unable to load stories. Try refreshing.';
+      return {};
+    }
+  }
+
+  // Show loading and load
+  loadingOverlay?.classList.remove('hidden');
+  loadData().then(data => {
+    categories = data;
+    Object.keys(categories).forEach(key => {
+      if (categories[key].length === 0) categories[key] = [placeholderStory];
     });
+    if (bookSelect) {
+      bookSelect.innerHTML = '';
+      Object.keys(categories).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key.replace('book', 'Book ');
+        bookSelect.appendChild(opt);
+      });
+      bookSelect.value = currentBook;
+      bookSelect.addEventListener('change', () => {
+        currentBook = bookSelect.value;
+        loadBook();
+      });
+    }
+    loadBook();
+    loadingOverlay?.classList.add('hidden');
+  });
 
   function loadBook() {
     passages = categories[currentBook] || [];
@@ -122,17 +127,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNavButtons();
   }
 
-  // Dark mode toggle
-  darkModeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-  });
+  // Dark mode
+  darkModeBtn.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
 
-  // Full-screen toggle
+  // Full-screen
   fullscreenBtn.addEventListener('click', () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error('Fullscreen error:', err);
-      });
+      document.documentElement.requestFullscreen().catch(err => console.error('Fullscreen error:', err));
     } else {
       document.exitFullscreen();
     }
@@ -150,16 +151,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn').disabled) flipTo(currentIndex - 1, 'prev');
     if (e.key === 'ArrowRight' && !document.getElementById('next-btn').disabled) flipTo(currentIndex + 1, 'next');
+    if (e.key === 'Enter' && document.activeElement.classList.contains('story-card')) document.activeElement.click();
   });
 
-  // Unlock logic (example: book2 after 5 stars)
+  // Unlock logic
   function isBookUnlocked(book) {
     if (book === 'book1') return true;
     if (book === 'book2' && stars >= 5) return true;
-    return false; // Add more as needed
+    return false;
   }
 
-  // Update book select to disable locked
   bookSelect.addEventListener('change', () => {
     if (!isBookUnlocked(currentBook)) {
       alert('Complete more stories in previous books to unlock!');
@@ -169,26 +170,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBook();
   });
 
-  // Render a passage by index
+  // Show passage
   function showPassage(i, container = document.getElementById('page')) {
     currentIndex = i;
     const p = passages[i];
-    if (!p) {
-      console.error('Invalid passage index:', i);
-      return;
-    }
+    if (!p) return;
     const pg = container;
-
-    // Reset wordRanges for the new passage
     wordRanges = [];
-
-    const imgPath = p.image ? `images/${p.image}` : '';
-   const imgTag = imgPath ? `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')}">` : '';
+    const imgPath = p.image ? `images/${p.image}` : 'https://via.placeholder.com/120x80.png?text=No+Image';
+    const altText = p.image ? `Illustration for ${p.title.replace(/<[^>]+>/g, '')}` : 'Placeholder image';
+    const imgTag = `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${altText}">`;
     const formattedText = formatText(p.text);
     pg.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
       <p id="passage-info">Story <span>${i + 1}</span> / ${passages.length}</p>
-      <div id="passage-text">${formattedText}</div>
+      <div id="passage-text" role="region" aria-live="polite">${formattedText}</div>
       ${imgTag}
     `;
 
@@ -204,16 +200,28 @@ document.addEventListener('DOMContentLoaded', () => {
     updateControlButtons();
     updateReadProgress(0);
     charPos = 0;
+
+    // Preload next/prev images
+    if (i > 0) new Image().src = `images/${passages[i-1].image}`;
+    if (i < passages.length - 1) new Image().src = `images/${passages[i+1].image}`;
   }
 
-  // Wrap each word in a <span class="word">
+  // Clean text for TTS
+  function cleanForTTS(text) {
+    return text.replace(/\./g, ' ')
+               .replace(/([.!?])/g, '$1 ')
+               .replace(/\s+/g, ' ')
+               .trim();
+  }
+
+  // Wrap words, separate punctuation
   function wrapWords(container) {
     Array.from(container.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
-        const parts = node.textContent.split(/(\s+)/),
-              frag = document.createDocumentFragment();
+        const parts = node.textContent.split(/(\s+|[.,!?;:"'()])/);
+        const frag = document.createDocumentFragment();
         parts.forEach(tok => {
-          if (/^\s+$/.test(tok)) {
+          if (/^\s+$/.test(tok) || /[.,!?;:"'()]/.test(tok)) {
             frag.append(tok);
           } else {
             const span = document.createElement('span');
@@ -229,12 +237,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Traverse function for building ranges
+  // Build ranges
   function traverse(node, cumulative) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      cumulative += node.textContent.length;
-      return cumulative;
-    }
+    if (node.nodeType === Node.TEXT_NODE) return cumulative + node.textContent.length;
     if (node.nodeType === Node.ELEMENT_NODE) {
       if (node.classList.contains('word')) {
         const len = node.textContent.length;
@@ -249,31 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return cumulative;
   }
 
-  // Build character-index ranges for speech syncing
   function buildRanges(div) {
-    let cumulative = 0;
     wordRanges = [];
-    Array.from(div.childNodes).forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        cumulative += node.textContent.length;
-        return;
-      }
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.classList.contains('word')) {
-          const len = node.textContent.length;
-          wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
-          cumulative += len;
-        } else {
-          Array.from(node.childNodes).forEach(child => {
-            cumulative = traverse(child, cumulative);
-          });
-        }
-      }
-    });
-    cumulative = traverse(div, cumulative);
+    traverse(div, 0);
   }
 
-  // Format raw story text into paragraphs
+  // Format text
   function formatText(text) {
     const sentences = text.split(/(?<=[.!?])\s+/);
     const paragraphs = [];
@@ -288,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return paragraphs.map(p => `<p>${p}</p>`).join('');
   }
 
-  // Enable/disable navigation and control buttons
+  // Nav buttons
   function updateNavButtons() {
     document.getElementById('prev-btn').disabled = currentIndex === 0;
     document.getElementById('next-btn').disabled = currentIndex === passages.length - 1;
@@ -304,24 +290,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateReadProgress(progress) {
-    if (readProgressBar) {
-      readProgressBar.style.setProperty('--progress', isNaN(progress) ? 0 : progress);
-      readProgressBar.style.width = (isNaN(progress) ? 0 : progress * 100) + '%';
-    }
-    if (seekRange) {
-      seekRange.value = isNaN(progress) ? 0 : progress * 100;
-    }
+    const safeProgress = isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress));
+    if (readProgressBar) readProgressBar.style.width = (safeProgress * 100) + '%';
+    if (seekRange) seekRange.value = safeProgress * 100;
   }
 
+  // Story map
   function buildStoryMap() {
     if (!storyGrid) return;
     storyGrid.innerHTML = '';
     passages.forEach((p, idx) => {
       const card = document.createElement('div');
       card.className = 'story-card';
+      card.tabIndex = 0; // Keyboard focus
+      card.role = 'listitem';
       if (idx > stars) card.classList.add('locked');
-      const imgPath = p.image ? `images/${p.image}` : 'https://via.placeholder.com/120x80.png?text=No+Image'; // Fallback image
-      card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title}"><div class="story-title">${p.title}</div>`;
+      const imgPath = p.image ? `images/${p.image}` : 'https://via.placeholder.com/120x80.png?text=No+Image';
+      card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title} illustration"><div class="story-title">${p.title}</div>`;
       card.addEventListener('click', () => {
         if (idx <= stars) {
           storyMap.classList.add('hidden');
@@ -334,32 +319,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Flip pages with animation
+  // Flip to
   function flipTo(idx, dir) {
     if (idx < 0 || idx >= passages.length) return;
-    stopNarration();
+    narrator.stop(true);
     whooshSound.play();
-
     const oldPg = document.getElementById('page');
     oldPg.innerHTML = '<div class="loader"></div>';
-
     setTimeout(() => {
       const newPg = oldPg.cloneNode(false);
       newPg.id = 'page';
       newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
       showPassage(idx, newPg);
       document.getElementById('book').appendChild(newPg);
-
       requestAnimationFrame(() => {
         oldPg.classList.add(dir === 'next' ? 'slide-left' : 'slide-right');
         newPg.classList.remove(dir === 'next' ? 'slide-right' : 'slide-left');
       });
-
       setTimeout(() => oldPg.remove(), 500);
     }, 300);
   }
 
-  // Earn a star
+  // Star earning
   document.getElementById('star-btn').addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
@@ -367,12 +348,12 @@ document.addEventListener('DOMContentLoaded', () => {
       cheerSound.play();
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       updateNavButtons();
-      buildStoryMap(); // Rebuild to unlock
+      buildStoryMap();
     }
   });
 
-  // Update star icons
   function updateStars() {
+    starCount.textContent = stars;
     starIcons.innerHTML = '';
     for (let i = 0; i < passages.length; i++) {
       const star = document.createElement('span');
@@ -381,110 +362,104 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Adjust reading speed
+  // Speed adjust
   function adjustSpeed() {
-    const idx = speeds.indexOf(currentSpeed);
-    const nextIndex = (idx + 1) % speeds.length;
-    currentSpeed = speeds[nextIndex];
-    speedBtn.textContent = labels[nextIndex];
+    const idx = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
+    currentSpeed = speeds[idx];
+    speedBtn.textContent = labels[idx];
   }
 
-  function startNarration(start = 0) {
-    stopNarration(false);
-
-    const text = document.getElementById('passage-text')?.textContent || '';
-    const speakText = text.slice(start);
-    if (!speakText) return;
-    utter = new SpeechSynthesisUtterance(speakText);
-    utter.rate = currentSpeed;
-if (voiceSelect && availableVoices.length) {
-      const voice = availableVoices[voiceSelect.value] || null;
-      if (voice) utter.voice = voice;
+  // Narrator class
+  class Narrator {
+    constructor() {
+      this.utter = null;
+      this.currentSpeakingSpan = null;
     }
-    utter.onboundary = event => {
-      if (event.name === 'word') {
-        const globalIndex = start + event.charIndex;
-        charPos = globalIndex;
-        if (currentSpeakingSpan) currentSpeakingSpan.classList.remove('speaking');
-        const range = wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
-        if (range) {
-          range.span.classList.add('speaking');
-          currentSpeakingSpan = range.span;
-        }
-        const textLength = text.length || 1;
-        updateReadProgress(globalIndex / textLength);
-        localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
-      }
-    };
 
-    utter.onend = () => {
-      if (currentSpeakingSpan) {
-        currentSpeakingSpan.classList.remove('speaking');
-        currentSpeakingSpan = null;
+    start(start = 0) {
+      this.stop(false);
+      const textElem = document.getElementById('passage-text');
+      if (!textElem) return;
+      let text = textElem.textContent || '';
+      const speakText = cleanForTTS(text.slice(start));
+      if (!speakText) return;
+      this.utter = new SpeechSynthesisUtterance(speakText);
+      this.utter.rate = currentSpeed;
+      if (voiceSelect && availableVoices.length) {
+        const voice = availableVoices[voiceSelect.value];
+        if (voice) this.utter.voice = voice;
       }
+      this.utter.onboundary = (event) => {
+        if (event.name === 'word') {
+          const globalIndex = start + event.charIndex;
+          charPos = globalIndex;
+          if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
+          const range = wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
+          if (range) {
+            range.span.classList.add('speaking');
+            this.currentSpeakingSpan = range.span;
+          }
+          updateReadProgress(globalIndex / (text.length || 1));
+          localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
+        }
+      };
+      this.utter.onend = () => this.reset();
+      this.utter.onerror = (e) => {
+        console.error('Speech error:', e);
+        feedbackDiv.textContent = 'Narration error. Try a different voice or refresh.';
+        this.reset();
+      };
+      speechSynthesis.speak(this.utter);
+      isPlaying = true;
+      isPaused = false;
+      updateControlButtons();
+    }
+
+    pause() {
+      if (!isPlaying) return;
+      speechSynthesis.pause();
+      isPaused = true;
+      isPlaying = false;
+      updateControlButtons();
+    }
+
+    resume() {
+      if (!isPaused) return;
+      speechSynthesis.resume();
+      isPaused = false;
+      isPlaying = true;
+      updateControlButtons();
+    }
+
+    stop(clearSaved = true) {
+      speechSynthesis.cancel();
+      if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
+      document.querySelectorAll('#passage-text .speaking').forEach(span => span.classList.remove('speaking'));
+      this.currentSpeakingSpan = null;
+      this.utter = null;
+      isPlaying = false;
+      isPaused = false;
+      if (clearSaved) {
+        charPos = 0;
+        localStorage.removeItem('progress');
+        updateReadProgress(0);
+        if (seekRange) seekRange.value = 0;
+      }
+      updateControlButtons();
+    }
+
+    reset() {
+      this.currentSpeakingSpan = null;
       isPlaying = false;
       isPaused = false;
       charPos = 0;
       updateControlButtons();
       updateReadProgress(1);
       localStorage.removeItem('progress');
-      playBtn.classList.remove('playing');
-      pauseBtn.classList.remove('paused');
-      resumeBtn.classList.remove('resume-highlight');
-    };
-
-    speechSynthesis.speak(utter);
-    isPlaying = true;
-    isPaused = false;
-    playBtn.classList.add('playing');
-    pauseBtn.classList.remove('paused');
-    resumeBtn.classList.remove('resume-highlight');
-    updateControlButtons();
-  }
-
-  function pauseNarration() {
-    if (!isPlaying) return;
-    speechSynthesis.pause();
-    isPaused = true;
-    isPlaying = false;
-    playBtn.classList.remove('playing');
-    pauseBtn.classList.add('paused');
-    resumeBtn.classList.add('resume-highlight');
-    updateControlButtons();
-  }
-
-  function resumeNarration() {
-    if (!isPaused) return;
-    speechSynthesis.resume();
-    isPaused = false;
-    isPlaying = true;
-    playBtn.classList.add('playing');
-    pauseBtn.classList.remove('paused');
-    resumeBtn.classList.remove('resume-highlight');
-    updateControlButtons();
-  }
-
-  function stopNarration(clearSaved = true) {
-    speechSynthesis.cancel();
-    if (currentSpeakingSpan) {
-      currentSpeakingSpan.classList.remove('speaking');
-      currentSpeakingSpan = null;
     }
-    document.querySelectorAll('#passage-text .speaking').forEach(span => span.classList.remove('speaking'));
-    isPlaying = false;
-    isPaused = false;
-    playBtn.classList.remove('playing');
-    pauseBtn.classList.remove('paused');
-    resumeBtn.classList.remove('resume-highlight');
-    utter = null;
-    if (clearSaved) {
-      charPos = 0;
-      localStorage.removeItem('progress');
-      updateReadProgress(0);
-      if (seekRange) seekRange.value = 0;
-    }
-    updateControlButtons();
   }
+
+  const narrator = new Narrator();
 
   // Voice capture setup with improvements
   function initVoiceCapture() {
@@ -554,6 +529,15 @@ if (voiceSelect && availableVoices.length) {
     if (span) span.classList.add('next-word');
   }
 
+  function similarity(s1, s2) {
+    s1 = s1.toLowerCase();
+    s2 = s2.toLowerCase();
+    if (s1.length !== s2.length) return 0;
+    let matches = 0;
+    for (let i = 0; i < s1.length; i++) if (s1[i] === s2[i]) matches++;
+    return (matches / s1.length) * 100;
+  }
+
   function highlightReading(transcript, storyText) {
     const expected = storyText.split(/\s+/);
     const spoken = transcript.trim().split(/\s+/);
@@ -564,10 +548,10 @@ if (voiceSelect && availableVoices.length) {
       if (!span) return;
       span.classList.remove('correct', 'incorrect');
       if (spoken[i]) {
-        if (spoken[i].toLowerCase() === word.toLowerCase()) {
+        if (spoken[i].toLowerCase() === word.toLowerCase() || similarity(spoken[i], word) > 80) {
           span.classList.add('correct');
           correct++;
-          currentWordIndex = i + 1; // Update current word on correct
+          currentWordIndex = i + 1;
         } else {
           span.classList.add('incorrect');
           nextIndex = Math.min(nextIndex, i);
@@ -580,7 +564,7 @@ if (voiceSelect && availableVoices.length) {
     feedbackDiv.textContent = `${transcript} | Score: ${accuracyScore.toFixed(0)}%`;
     updateReadProgress(correct / expected.length);
     if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
-    highlightNextWord(nextIndex); // Highlight the first unmatched word
+    highlightNextWord(nextIndex);
   }
 
   function startVoiceCapture() {
@@ -606,62 +590,45 @@ if (voiceSelect && availableVoices.length) {
     document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
   }
 
-  speedBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    adjustSpeed();
-  });
-  speedBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    adjustSpeed();
-    e.stopPropagation();
-  }, { passive: false });
-  speedBtn.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    adjustSpeed();
-  }, { passive: false });
-
+  // Event listeners
+  speedBtn.addEventListener('click', adjustSpeed);
   document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn')?.addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
-
-  playBtn?.addEventListener('click', () => startNarration(charPos));
-  pauseBtn?.addEventListener('click', pauseNarration);
-  resumeBtn?.addEventListener('click', resumeNarration);
+  playBtn?.addEventListener('click', () => narrator.start(charPos));
+  pauseBtn?.addEventListener('click', () => narrator.pause());
+  resumeBtn?.addEventListener('click', () => narrator.resume());
   stopBtn?.addEventListener('click', () => {
-    if (confirm('Are you sure you want to stop?')) stopNarration();
+    if (confirm('Are you sure you want to stop?')) narrator.stop();
   });
   micBtn?.addEventListener('click', startVoiceCapture);
   micStopBtn?.addEventListener('click', stopVoiceCapture);
-  if (seekRange) {
-    seekRange.value = 0;
-    seekRange.addEventListener('change', (e) => {
-      const pos = Math.floor((e.target.value / 100) * (passages[currentIndex]?.text?.length || 1));
-      charPos = pos;
-      if (isPlaying || isPaused) {
-        startNarration(charPos);
-      } else {
-        updateReadProgress(charPos / (passages[currentIndex]?.text?.length || 1));
-      }
-    });
-  }
+  seekRange.addEventListener('input', (e) => { // Changed to input for real-time
+    const pos = Math.floor((e.target.value / 100) * (passages[currentIndex]?.text?.length || 1));
+    charPos = pos;
+    if (isPlaying || isPaused) narrator.start(charPos);
+    else updateReadProgress(pos / (passages[currentIndex]?.text?.length || 1));
+  });
 
   mapBtn?.addEventListener('click', () => {
-    stopNarration(false);
+    narrator.stop(false);
     storyMap.classList.remove('hidden');
   });
   closeMapBtn?.addEventListener('click', () => storyMap.classList.add('hidden'));
 
   topBtn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   window.addEventListener('scroll', () => {
-    if (!topBtn) return;
     if (window.scrollY > 200) topBtn.classList.add('show');
     else topBtn.classList.remove('show');
   });
 
   window.addEventListener('beforeunload', () => {
-    if (isPlaying || isPaused) {
-      localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
-    }
-    stopNarration(false);
+    if (isPlaying || isPaused) localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
+    narrator.stop(false);
     stopVoiceCapture();
   });
+
+  // Service worker for PWA (add manifest.json separately)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW error:', err));
+  }
 });
