@@ -28,6 +28,10 @@ body {
   background: rgba(0,0,0,0.95);
 }
 
+.dark-mode #passage-text {
+  color: #ddd;
+}
+
 #game-container {
   width: 95%;
   max-width: 900px;
@@ -36,7 +40,7 @@ body {
   background: rgba(255,255,255,0.95);
   border-radius: 15px;
   box-shadow: 0 0 20px rgba(0,0,0,0.2);
-  margin: 30px; /* Increased for whitespace */
+  margin: 30px;
 }
 
 /* Banner with softened gradient */
@@ -105,27 +109,6 @@ body {
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-15px); }
-}
-
-/* Title bounce (hidden, but kept for reference) */
-.title {
-  font-size: 2.8em;
-  color: var(--primary);
-  text-shadow: 3px 3px var(--accent);
-  margin-bottom: 10px;
-  animation: bounce 2s infinite ease-out;
-  display: none; /* Hidden since banner takes over */
-}
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-20px);
-  }
-  60% {
-    transform: translateY(-10px);
-  }
 }
 
 /* Progress bar */
@@ -310,6 +293,8 @@ button:disabled {
 #seek-range {
   width: 80%;
   margin: 10px auto;
+  height: 10px; /* Thicker for touch */
+  cursor: pointer;
 }
 
 .hidden {
@@ -429,6 +414,23 @@ button:disabled {
 @keyframes slideOutRight {
   from { transform: translateX(0); }
   to   { transform: translateX(100%); }
+}
+
+/* Add for mic mode */
+.word.next-word {
+  background-color: lightblue;
+  border: 1px solid blue;
+}
+
+/* Story card keyboard focus */
+.story-card:focus {
+  outline: 2px solid var(--accent);
+}
+
+/* Locked card */
+.story-card.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Responsive Adjustments */
