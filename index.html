@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive phonics adventures for kids! Fun stories with narration and reading practice.">
   <title>Fun Phonics Adventure!</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2&family=Comic+Neue&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <link rel="manifest" href="manifest.json"> <!-- For PWA -->
 </head>
 <body>
   <div id="game-container">
@@ -18,7 +20,6 @@
         <div class="star-character" role="img" aria-label="Star"></div>
       </div>
     </div>
-    <h1 class="title" style="display: none;">Fun Phonics Adventure! 🎉</h1> <!-- Hidden original title -->
 
     <div id="progress-container">
       <div id="progress-bar"></div>
@@ -45,24 +46,25 @@
       <button id="star-btn" disabled>Star ⭐</button>
       <button id="mic-btn" aria-label="Start reading">🎤</button>
       <button id="mic-stop-btn" aria-label="Stop reading" disabled>⏹🎤</button>
-       <select id="voice-select" aria-label="Choose voice"></select>
+      <select id="voice-select" aria-label="Choose voice"></select>
       <button id="dark-mode-btn" aria-label="Toggle dark mode">🌙</button>
-      <button id="fullscreen-btn" aria-label="Toggle full screen">🖥️</button> <!-- New full-screen button -->
+      <button id="fullscreen-btn" aria-label="Toggle full screen">🖥️</button>
     </div>
 
     <div id="star-counter">
       Stars: <span id="star-count">0</span>
+      <div id="star-icons"></div> <!-- Added for visual stars -->
     </div>
     <div id="feedback" aria-live="polite"></div>
     <div id="seek-container">
-      <input type="range" id="seek-range" min="0" max="100" value="0">
+      <input type="range" id="seek-range" min="0" max="100" value="0" aria-label="Seek narration progress">
     </div>
     <div id="story-map" class="hidden">
       <button id="close-map" aria-label="Close story list">✖️</button>
-      <div id="story-grid"></div>
+      <div id="story-grid" role="list"></div>
     </div>
   </div>
-<button id="top-btn" aria-label="Back to top">⬆️</button>
+  <button id="top-btn" aria-label="Back to top">⬆️</button>
   <div id="loading-overlay" class="hidden" aria-label="Loading">
     <div class="loader"></div>
   </div>
