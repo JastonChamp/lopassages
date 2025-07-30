@@ -1,4 +1,4 @@
-const { cleanForTTS, levenshtein } = require('./script.js');
+const { cleanForTTS, levenshtein } = require('./utils');
 
 test('cleanForTTS removes extra spaces and punctuation', () => {
   expect(cleanForTTS('Dan sat on the sand. It was damp.')).toBe('Dan sat on the sand. It was damp.');
