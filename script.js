@@ -35,14 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
         darkModeBtn = document.getElementById('dark-mode-btn'),
         fullscreenBtn = document.getElementById('fullscreen-btn'),
         starCount = document.getElementById('star-count'),
-        starIcons = document.getElementById('star-icons'), // Added
+        starIcons = document.getElementById('star-icons'),
         topBtn = document.getElementById('top-btn'),
         loadingOverlay = document.getElementById('loading-overlay');
+
+  // Debugging: Log initial DOM elements
+  console.log({ voiceSelect, readProgressBar, seekRange, bookSelect, loadingOverlay });
 
   // Speeds and labels
   const speeds = [0.3, 0.6, 0.9, 1.2];
   const labels = ['🐢', '🚶', '🏃', '🚀'];
-  speedBtn.textContent = labels[speeds.indexOf(currentSpeed)];
+  speedBtn && (speedBtn.textContent = labels[speeds.indexOf(currentSpeed)]);
 
   // Voice selection
   let availableVoices = [];
@@ -73,32 +76,44 @@ document.addEventListener('DOMContentLoaded', () => {
     image: "placeholder.png"
   };
 
-  // Cache/load data
+  // Enhanced loadData with timeout and fallback
   async function loadData() {
+    const loadingTimeout = setTimeout(() => {
+      console.error('Loading timed out after 10s');
+      feedbackDiv.textContent = 'Loading failed. Check network or refresh.';
+      if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    }, 10000); // 10-second timeout
+
     try {
       const cached = localStorage.getItem('passages');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed.version === VERSION) return parsed.data;
+        if (parsed.version === VERSION) {
+          clearTimeout(loadingTimeout);
+          return parsed.data;
+        }
       }
-      const response = await fetch('passages.json');
-      if (!response.ok) throw new Error('Failed to load passages');
+      const response = await fetch('passages.json', { cache: 'no-store' }); // Force fresh fetch
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       localStorage.setItem('passages', JSON.stringify({ version: VERSION, data }));
+      clearTimeout(loadingTimeout);
       return data;
     } catch (err) {
       console.error('Load error:', err);
-      document.getElementById('page').textContent = 'Oops! Unable to load stories. Try refreshing.';
-      return {};
+      clearTimeout(loadingTimeout);
+      if (loadingOverlay) loadingOverlay.classList.add('hidden');
+      feedbackDiv.textContent = 'Error loading stories. Using cached or placeholder data.';
+      return { book1: [placeholderStory] }; // Fallback
     }
   }
 
-  // Show loading and load
-  loadingOverlay?.classList.remove('hidden');
+  // Show loading and load with error handling
+  if (loadingOverlay) loadingOverlay.classList.remove('hidden');
   loadData().then(data => {
-    categories = data;
+    categories = data || {};
     Object.keys(categories).forEach(key => {
-      if (categories[key].length === 0) categories[key] = [placeholderStory];
+      if (!categories[key]?.length) categories[key] = [placeholderStory];
     });
     if (bookSelect) {
       bookSelect.innerHTML = '';
@@ -115,12 +130,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     loadBook();
-    loadingOverlay?.classList.add('hidden');
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+  }).catch(err => {
+    console.error('Load promise error:', err);
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    feedbackDiv.textContent = 'Critical error. Please reload or contact support.';
+    categories = { book1: [placeholderStory] };
+    loadBook();
   });
 
   function loadBook() {
     passages = categories[currentBook] || [];
-    document.getElementById('total-stories').textContent = passages.length;
+    if (document.getElementById('total-stories')) document.getElementById('total-stories').textContent = passages.length;
     document.documentElement.style.setProperty('--total', passages.length);
     buildStoryMap();
     showPassage(0);
@@ -128,10 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Dark mode
-  darkModeBtn.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
+  darkModeBtn?.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
 
   // Full-screen
-  fullscreenBtn.addEventListener('click', () => {
+  fullscreenBtn?.addEventListener('click', () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => console.error('Fullscreen error:', err));
     } else {
@@ -141,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Button feedback
   document.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn?.addEventListener('click', () => {
       btn.style.transform = 'scale(1.1)';
       setTimeout(() => btn.style.transform = 'scale(1)', 200);
     });
@@ -149,9 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn').disabled) flipTo(currentIndex - 1, 'prev');
-    if (e.key === 'ArrowRight' && !document.getElementById('next-btn').disabled) flipTo(currentIndex + 1, 'next');
-    if (e.key === 'Enter' && document.activeElement.classList.contains('story-card')) document.activeElement.click();
+    if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn')?.disabled) flipTo(currentIndex - 1, 'prev');
+    if (e.key === 'ArrowRight' && !document.getElementById('next-btn')?.disabled) flipTo(currentIndex + 1, 'next');
+    if (e.key === 'Enter' && document.activeElement?.classList.contains('story-card')) document.activeElement.click();
   });
 
   // Unlock logic
@@ -161,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
-  bookSelect.addEventListener('change', () => {
+  bookSelect?.addEventListener('change', () => {
     if (!isBookUnlocked(currentBook)) {
       alert('Complete more stories in previous books to unlock!');
       bookSelect.value = 'book1';
@@ -174,27 +195,26 @@ document.addEventListener('DOMContentLoaded', () => {
   function showPassage(i, container = document.getElementById('page')) {
     currentIndex = i;
     const p = passages[i];
-    if (!p) return;
-    const pg = container;
+    if (!p || !container) return;
     wordRanges = [];
     const imgPath = p.image ? `images/${p.image}` : 'https://via.placeholder.com/120x80.png?text=No+Image';
     const altText = p.image ? `Illustration for ${p.title.replace(/<[^>]+>/g, '')}` : 'Placeholder image';
     const imgTag = `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${altText}">`;
     const formattedText = formatText(p.text);
-    pg.innerHTML = `
+    container.innerHTML = `
       <h1 id="passage-title">${p.title}</h1>
       <p id="passage-info">Story <span>${i + 1}</span> / ${passages.length}</p>
       <div id="passage-text" role="region" aria-live="polite">${formattedText}</div>
       ${imgTag}
     `;
 
-    const textDiv = pg.querySelector('#passage-text');
+    const textDiv = container.querySelector('#passage-text');
     if (textDiv) {
       wrapWords(textDiv);
       buildRanges(textDiv);
     }
 
-    document.getElementById('current-story').textContent = i + 1;
+    if (document.getElementById('current-story')) document.getElementById('current-story').textContent = i + 1;
     document.documentElement.style.setProperty('--current', i + 1);
     updateNavButtons();
     updateControlButtons();
@@ -216,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Wrap words, separate punctuation
   function wrapWords(container) {
+    if (!container) return;
     Array.from(container.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
         const parts = node.textContent.split(/(\s+|[.,!?;:"'()])/);
@@ -256,11 +277,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildRanges(div) {
     wordRanges = [];
-    traverse(div, 0);
+    if (div) traverse(div, 0);
   }
 
   // Format text
   function formatText(text) {
+    if (!text) return '';
     const sentences = text.split(/(?<=[.!?])\s+/);
     const paragraphs = [];
     let buf = [];
@@ -276,17 +298,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Nav buttons
   function updateNavButtons() {
-    document.getElementById('prev-btn').disabled = currentIndex === 0;
-    document.getElementById('next-btn').disabled = currentIndex === passages.length - 1;
-    document.getElementById('star-btn').disabled = currentIndex === 0 || stars >= passages.length;
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const starBtn = document.getElementById('star-btn');
+    if (prevBtn) prevBtn.disabled = currentIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentIndex === passages.length - 1;
+    if (starBtn) starBtn.disabled = currentIndex === 0 || stars >= passages.length;
   }
 
   function updateControlButtons() {
-    playBtn.disabled = isPlaying || isPaused;
-    pauseBtn.disabled = !isPlaying;
-    resumeBtn.disabled = !isPaused;
-    stopBtn.disabled = !(isPlaying || isPaused);
-    resumeBtn.style.display = isPaused ? 'inline-block' : 'none';
+    if (playBtn) playBtn.disabled = isPlaying || isPaused;
+    if (pauseBtn) pauseBtn.disabled = !isPlaying;
+    if (resumeBtn) resumeBtn.disabled = !isPaused;
+    if (stopBtn) stopBtn.disabled = !(isPlaying || isPaused);
+    if (resumeBtn) resumeBtn.style.display = isPaused ? 'inline-block' : 'none';
   }
 
   function updateReadProgress(progress) {
@@ -325,13 +350,14 @@ document.addEventListener('DOMContentLoaded', () => {
     narrator.stop(true);
     whooshSound.play();
     const oldPg = document.getElementById('page');
+    if (!oldPg) return;
     oldPg.innerHTML = '<div class="loader"></div>';
     setTimeout(() => {
       const newPg = oldPg.cloneNode(false);
       newPg.id = 'page';
       newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
       showPassage(idx, newPg);
-      document.getElementById('book').appendChild(newPg);
+      if (document.getElementById('book')) document.getElementById('book').appendChild(newPg);
       requestAnimationFrame(() => {
         oldPg.classList.add(dir === 'next' ? 'slide-left' : 'slide-right');
         newPg.classList.remove(dir === 'next' ? 'slide-right' : 'slide-left');
@@ -341,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Star earning
-  document.getElementById('star-btn').addEventListener('click', () => {
+  document.getElementById('star-btn')?.addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
       updateStars();
@@ -353,12 +379,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function updateStars() {
-    starCount.textContent = stars;
-    starIcons.innerHTML = '';
-    for (let i = 0; i < passages.length; i++) {
-      const star = document.createElement('span');
-      star.textContent = i < stars ? '⭐' : '☆';
-      starIcons.appendChild(star);
+    if (starCount) starCount.textContent = stars;
+    if (starIcons) {
+      starIcons.innerHTML = '';
+      for (let i = 0; i < passages.length; i++) {
+        const star = document.createElement('span');
+        star.textContent = i < stars ? '⭐' : '☆';
+        starIcons.appendChild(star);
+      }
     }
   }
 
@@ -366,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function adjustSpeed() {
     const idx = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
     currentSpeed = speeds[idx];
-    speedBtn.textContent = labels[idx];
+    if (speedBtn) speedBtn.textContent = labels[idx];
   }
 
   // Narrator class
@@ -379,7 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
     start(start = 0) {
       this.stop(false);
       const textElem = document.getElementById('passage-text');
-      if (!textElem) return;
+      if (!textElem) {
+        feedbackDiv.textContent = 'Text element not found. Please reload.';
+        return;
+      }
       let text = textElem.textContent || '';
       const speakText = cleanForTTS(text.slice(start));
       if (!speakText) return;
@@ -409,10 +440,15 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackDiv.textContent = 'Narration error. Try a different voice or refresh.';
         this.reset();
       };
-      speechSynthesis.speak(this.utter);
-      isPlaying = true;
-      isPaused = false;
-      updateControlButtons();
+      try {
+        speechSynthesis.speak(this.utter);
+        isPlaying = true;
+        isPaused = false;
+        updateControlButtons();
+      } catch (e) {
+        console.error('SpeechSynthesis error:', e);
+        feedbackDiv.textContent = 'Speech synthesis failed. Check browser settings.';
+      }
     }
 
     pause() {
@@ -590,8 +626,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
   }
 
-  // Event listeners
-  speedBtn.addEventListener('click', adjustSpeed);
+  // Event listeners with null checks
+  speedBtn?.addEventListener('click', adjustSpeed);
   document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
   document.getElementById('next-btn')?.addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
   playBtn?.addEventListener('click', () => narrator.start(charPos));
@@ -602,7 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   micBtn?.addEventListener('click', startVoiceCapture);
   micStopBtn?.addEventListener('click', stopVoiceCapture);
-  seekRange.addEventListener('input', (e) => { // Changed to input for real-time
+  seekRange?.addEventListener('input', (e) => {
     const pos = Math.floor((e.target.value / 100) * (passages[currentIndex]?.text?.length || 1));
     charPos = pos;
     if (isPlaying || isPaused) narrator.start(charPos);
@@ -627,7 +663,6 @@ document.addEventListener('DOMContentLoaded', () => {
     stopVoiceCapture();
   });
 
-  // Service worker for PWA (add manifest.json separately)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW error:', err));
   }
