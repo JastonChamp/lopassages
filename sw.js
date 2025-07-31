@@ -1,10 +1,10 @@
 const CACHE_NAME = 'ppa-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/script.js',
-  '/passages.json'
+ './',
+  './index.html',
+  './styles.css',
+  './script.js',
+  './passages.json'
 ];
 
 self.addEventListener('install', event => {
