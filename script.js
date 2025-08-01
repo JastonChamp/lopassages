@@ -38,15 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
         starIcons = document.getElementById('star-icons'),
         topBtn = document.getElementById('top-btn'),
         loadingOverlay = document.getElementById('loading-overlay');
-
    // Speeds and labels
   const speeds = [0.3, 0.6, 0.9, 1.2];
   const labels = ['🐢', '🚶', '🏃', '🚀'];
   speedBtn && (speedBtn.textContent = labels[speeds.indexOf(currentSpeed)]);
-
   // Voice selection
   let availableVoices = [];
-
   function populateVoices() {
     availableVoices = speechSynthesis.getVoices();
     if (!voiceSelect) return;
@@ -60,51 +57,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('voiceIndex');
     if (saved && voiceSelect.options[saved]) voiceSelect.value = saved;
   }
-
   populateVoices();
   if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
-
   voiceSelect?.addEventListener('change', () => localStorage.setItem('voiceIndex', voiceSelect.value));
-
   // Placeholder story
   const placeholderStory = {
     title: "Coming Soon!",
     text: "More adventures are on the way! Check back later. 🎉",
     image: "placeholder.png"
   };
-
-  // Enhanced loadData with timeout and fallback
+  // Enhanced loadData with abortable fetch and timeout
   async function loadData() {
-    const loadingTimeout = setTimeout(() => {
-      console.error('Loading timed out after 10s');
-      feedbackDiv.textContent = 'Loading failed. Check network or refresh.';
-      if (loadingOverlay) loadingOverlay.classList.add('hidden');
-    }, 10000); // 10-second timeout
-
-    try {
-      const cached = localStorage.getItem('passages');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.version === VERSION) {
-          clearTimeout(loadingTimeout);
-          return parsed.data;
-        }
+    const cached = localStorage.getItem('passages');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed.version === VERSION) {
+        return parsed.data;
       }
-      const response = await fetch('passages.json', { cache: 'no-store' }); // Force fresh fetch
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      localStorage.setItem('passages', JSON.stringify({ version: VERSION, data }));
-      clearTimeout(loadingTimeout);
-      return data;
-    } catch (err) {
-      console.error('Load error:', err);
-      clearTimeout(loadingTimeout);
-      if (loadingOverlay) loadingOverlay.classList.add('hidden');
-      feedbackDiv.textContent = 'Error loading stories. Using cached or placeholder data.';
-      return { book1: [placeholderStory] }; // Fallback
     }
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 10000);
+    let response;
+    try {
+      response = await fetch('passages.json', { cache: 'no-store', signal: controller.signal });
+    } finally {
+      clearTimeout(id);
+    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    localStorage.setItem('passages', JSON.stringify({ version: VERSION, data }));
+    return data;
   }
-
   // Show loading and load with error handling
   if (loadingOverlay) loadingOverlay.classList.remove('hidden');
   loadData().then(data => {
@@ -130,12 +113,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
   }).catch(err => {
     console.error('Load promise error:', err);
+    let msg = 'Critical error. Please reload or contact support.';
+    if (err.name === 'AbortError') {
+      msg = 'Loading timed out after 10s. Check your connection and try again.';
+    } else if (err.message.startsWith('HTTP error')) {
+      msg = 'Failed to load stories. Server issue?';
+    } else if (err.message === 'Failed to fetch') {
+      msg = 'Network error. Are you offline?';
+    }
+    feedbackDiv.textContent = msg;
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
-    feedbackDiv.textContent = 'Critical error. Please reload or contact support.';
-    categories = { book1: [placeholderStory] };
+    // Fallback to any cached data (even outdated) or placeholder
+    const cached = localStorage.getItem('passages');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      categories = parsed.data;
+    } else {
+      categories = { book1: [placeholderStory] };
+    }
+    if (bookSelect) {
+      bookSelect.innerHTML = '';
+      Object.keys(categories).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key.replace('book', 'Book ');
+        bookSelect.appendChild(opt);
+      });
+      bookSelect.value = currentBook;
+      bookSelect.addEventListener('change', () => {
+        currentBook = bookSelect.value;
+        loadBook();
+      });
+    }
     loadBook();
   });
-
   function loadBook() {
     passages = categories[currentBook] || [];
     if (document.getElementById('total-stories')) document.getElementById('total-stories').textContent = passages.length;
@@ -144,10 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
     showPassage(0);
     updateNavButtons();
   }
-
   // Dark mode
   darkModeBtn?.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
-
   // Full-screen
   fullscreenBtn?.addEventListener('click', () => {
     if (!document.fullscreenElement) {
@@ -156,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.exitFullscreen();
     }
   });
-
   // Button feedback
   document.querySelectorAll('button').forEach(btn => {
     btn?.addEventListener('click', () => {
@@ -164,21 +172,18 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => btn.style.transform = 'scale(1)', 200);
     });
   });
-
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn')?.disabled) flipTo(currentIndex - 1, 'prev');
     if (e.key === 'ArrowRight' && !document.getElementById('next-btn')?.disabled) flipTo(currentIndex + 1, 'next');
     if (e.key === 'Enter' && document.activeElement?.classList.contains('story-card')) document.activeElement.click();
   });
-
   // Unlock logic
   function isBookUnlocked(book) {
     if (book === 'book1') return true;
     if (book === 'book2' && stars >= 5) return true;
     return false;
   }
-
   bookSelect?.addEventListener('change', () => {
     if (!isBookUnlocked(currentBook)) {
       alert('Complete more stories in previous books to unlock!');
@@ -187,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadBook();
   });
-
   // Show passage
   function showPassage(i, container = document.getElementById('page')) {
     currentIndex = i;
@@ -204,25 +208,21 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="passage-text" role="region" aria-live="polite">${formattedText}</div>
       ${imgTag}
     `;
-
     const textDiv = container.querySelector('#passage-text');
     if (textDiv) {
       wrapWords(textDiv);
       buildRanges(textDiv);
     }
-
     if (document.getElementById('current-story')) document.getElementById('current-story').textContent = i + 1;
     document.documentElement.style.setProperty('--current', i + 1);
     updateNavButtons();
     updateControlButtons();
     updateReadProgress(0);
     charPos = 0;
-
     // Preload next/prev images
     if (i > 0) new Image().src = `images/${passages[i-1].image}`;
     if (i < passages.length - 1) new Image().src = `images/${passages[i+1].image}`;
   }
-
   // Clean text for TTS
   function cleanForTTS(text) {
     return text.replace(/\./g, ' ')
@@ -230,7 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
                .replace(/\s+/g, ' ')
                .trim();
   }
-
   // Wrap words, separate punctuation
   function wrapWords(container) {
     if (!container) return;
@@ -254,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
   // Build ranges
   function traverse(node, cumulative) {
     if (node.nodeType === Node.TEXT_NODE) return cumulative + node.textContent.length;
@@ -271,12 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return cumulative;
   }
-
   function buildRanges(div) {
     wordRanges = [];
     if (div) traverse(div, 0);
   }
-
   // Format text
   function formatText(text) {
     if (!text) return '';
@@ -292,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     return paragraphs.map(p => `<p>${p}</p>`).join('');
   }
-
   // Nav buttons
   function updateNavButtons() {
     const prevBtn = document.getElementById('prev-btn');
@@ -302,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nextBtn) nextBtn.disabled = currentIndex === passages.length - 1;
     if (starBtn) starBtn.disabled = currentIndex === 0 || stars >= passages.length;
   }
-
   function updateControlButtons() {
     if (playBtn) playBtn.disabled = isPlaying || isPaused;
     if (pauseBtn) pauseBtn.disabled = !isPlaying;
@@ -310,13 +304,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (stopBtn) stopBtn.disabled = !(isPlaying || isPaused);
     if (resumeBtn) resumeBtn.style.display = isPaused ? 'inline-block' : 'none';
   }
-
   function updateReadProgress(progress) {
     const safeProgress = isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress));
     if (readProgressBar) readProgressBar.style.width = (safeProgress * 100) + '%';
     if (seekRange) seekRange.value = safeProgress * 100;
   }
-
   // Story map
   function buildStoryMap() {
     if (!storyGrid) return;
@@ -340,7 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
       storyGrid.appendChild(card);
     });
   }
-
   // Flip to
   function flipTo(idx, dir) {
     if (idx < 0 || idx >= passages.length) return;
@@ -362,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => oldPg.remove(), 500);
     }, 300);
   }
-
   // Star earning
   document.getElementById('star-btn')?.addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
@@ -374,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
       buildStoryMap();
     }
   });
-
   function updateStars() {
     if (starCount) starCount.textContent = stars;
     if (starIcons) {
@@ -386,21 +375,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-
   // Speed adjust
   function adjustSpeed() {
     const idx = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
     currentSpeed = speeds[idx];
     if (speedBtn) speedBtn.textContent = labels[idx];
   }
-
   // Narrator class
   class Narrator {
     constructor() {
       this.utter = null;
       this.currentSpeakingSpan = null;
     }
-
     start(start = 0) {
       this.stop(false);
       const textElem = document.getElementById('passage-text');
@@ -447,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackDiv.textContent = 'Speech synthesis failed. Check browser settings.';
       }
     }
-
     pause() {
       if (!isPlaying) return;
       speechSynthesis.pause();
@@ -455,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isPlaying = false;
       updateControlButtons();
     }
-
     resume() {
       if (!isPaused) return;
       speechSynthesis.resume();
@@ -463,7 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isPlaying = true;
       updateControlButtons();
     }
-
     stop(clearSaved = true) {
       speechSynthesis.cancel();
       if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
@@ -480,7 +463,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       updateControlButtons();
     }
-
     reset() {
       this.currentSpeakingSpan = null;
       isPlaying = false;
@@ -491,9 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('progress');
     }
   }
-
   const narrator = new Narrator();
-
   // Voice capture setup with improvements
   function initVoiceCapture() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -508,7 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
     recognition.continuous = true; // Improved: Continuous for longer reading
     recognition.interimResults = true; // Improved: Real-time feedback
     recognition.maxAlternatives = 3; // Improved: Multiple guesses for better matching
-
     // Improved: Grammar from story words for accuracy
     const storyText = passages[currentIndex]?.text || '';
     const words = [...new Set(storyText.toLowerCase().split(/\s+/).filter(w => w.length > 1))]; // Unique words >1 char
@@ -518,7 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
       speechRecognitionList.addFromString(grammar, 1);
       recognition.grammars = speechRecognitionList;
     }
-
     recognition.onresult = (event) => {
       const results = Array.from(event.results);
       let transcript = '';
@@ -555,13 +533,11 @@ document.addEventListener('DOMContentLoaded', () => {
       feedbackDiv.textContent = 'No match found. Try speaking slower or more clearly.';
     };
   }
-
   function highlightNextWord(index) {
     document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
     const span = document.querySelector(`#passage-text .word:nth-child(${index + 1})`);
     if (span) span.classList.add('next-word');
   }
-
   function similarity(s1, s2) {
     s1 = s1.toLowerCase();
     s2 = s2.toLowerCase();
@@ -570,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < s1.length; i++) if (s1[i] === s2[i]) matches++;
     return (matches / s1.length) * 100;
   }
-
   function highlightReading(transcript, storyText) {
     const expected = storyText.split(/\s+/);
     const spoken = transcript.trim().split(/\s+/);
@@ -599,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
     highlightNextWord(nextIndex);
   }
-
   function startVoiceCapture() {
     if (!micPermissionGranted) {
       micPermissionGranted = confirm('Allow microphone access to practice reading aloud?');
@@ -612,7 +586,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Unable to start voice capture:', err);
     }
   }
-
   function stopVoiceCapture() {
     try {
       recognition?.stop();
@@ -622,7 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
     feedbackDiv.textContent = '';
     document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
   }
-
   // Event listeners with null checks
   speedBtn?.addEventListener('click', adjustSpeed);
   document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
@@ -641,25 +613,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isPlaying || isPaused) narrator.start(charPos);
     else updateReadProgress(pos / (passages[currentIndex]?.text?.length || 1));
   });
-
   mapBtn?.addEventListener('click', () => {
     narrator.stop(false);
     storyMap.classList.remove('hidden');
   });
   closeMapBtn?.addEventListener('click', () => storyMap.classList.add('hidden'));
-
   topBtn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   window.addEventListener('scroll', () => {
     if (window.scrollY > 200) topBtn.classList.add('show');
     else topBtn.classList.remove('show');
   });
-
   window.addEventListener('beforeunload', () => {
     if (isPlaying || isPaused) localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
     narrator.stop(false);
     stopVoiceCapture();
   });
-
   if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(err => console.error('SW error:', err));
   }
