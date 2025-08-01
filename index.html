@@ -7,7 +7,6 @@
   <title>Fun Phonics Adventure!</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2&family=Comic+Neue&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <link rel="manifest" href="manifest.json"> <!-- For PWA -->
 </head>
 <body>
@@ -31,36 +30,36 @@
       <div id="page"></div>
     </div>
     <div id="controls">
-      <select id="book-select" aria-label="Choose book" title="Select a book"></select>
-      <button id="map-btn" aria-label="Choose a story" title="Open story map">📚</button>
-      <button id="prev-btn" disabled title="Previous story">Back ⬅️</button>
-      <button id="play-btn" aria-label="Play narration" title="Play story narration">▶️</button>
-      <button id="pause-btn" aria-label="Pause narration" disabled title="Pause narration">⏸️</button>
-      <button id="resume-btn" aria-label="Resume narration" disabled title="Resume narration">Resume ▶️</button>
-      <button id="stop-btn" aria-label="Stop narration" disabled title="Stop narration">⏹️</button>
-      <button id="next-btn" disabled title="Next story">Next ➡️</button>
-      <button id="speed-btn" aria-label="Adjust reading speed" title="Change narration speed">🐢</button>
-      <button id="star-btn" disabled title="Earn a star">Star ⭐</button>
-      <button id="mic-btn" aria-label="Start reading" title="Practice reading aloud">🎤</button>
-      <button id="mic-stop-btn" aria-label="Stop reading" disabled title="Stop reading practice">⏹🎤</button>
-      <select id="voice-select" aria-label="Choose voice" title="Select narration voice"></select>
-      <button id="dark-mode-btn" aria-label="Toggle dark mode" title="Switch to dark mode">🌙</button>
-      <button id="fullscreen-btn" aria-label="Toggle full screen" title="Full screen mode">🖥️</button>
+      <select id="book-select" aria-label="Choose book"></select>
+      <button id="map-btn" aria-label="Choose a story" data-tooltip="Story Map">📚</button>
+      <button id="prev-btn" disabled data-tooltip="Previous Story">Back ⬅️</button>
+      <button id="play-btn" aria-label="Play narration" data-tooltip="Play">▶️</button>
+      <button id="pause-btn" aria-label="Pause narration" disabled data-tooltip="Pause">⏸️</button>
+      <button id="resume-btn" aria-label="Resume narration" disabled data-tooltip="Resume">Resume ▶️</button>
+      <button id="stop-btn" aria-label="Stop narration" disabled data-tooltip="Stop">⏹️</button>
+      <button id="next-btn" disabled data-tooltip="Next Story">Next ➡️</button>
+      <button id="speed-btn" aria-label="Adjust reading speed" data-tooltip="Speed">🐢</button>
+      <button id="star-btn" disabled data-tooltip="Earn Star">Star ⭐</button>
+      <button id="mic-btn" aria-label="Start reading" data-tooltip="Read Aloud">🎤</button>
+      <button id="mic-stop-btn" aria-label="Stop reading" disabled data-tooltip="Stop Reading">⏹🎤</button>
+      <select id="voice-select" aria-label="Choose voice"></select>
+      <button id="dark-mode-btn" aria-label="Toggle dark mode" data-tooltip="Dark Mode">🌙</button>
+      <button id="fullscreen-btn" aria-label="Toggle full screen" data-tooltip="Fullscreen">🖥️</button>
     </div>
     <div id="star-counter">
       Stars: <span id="star-count">0</span>
-      <div id="star-icons"></div>
+      <div id="star-icons"></div> <!-- Added for visual stars -->
     </div>
     <div id="feedback" aria-live="polite"></div>
     <div id="seek-container">
-      <input type="range" id="seek-range" min="0" max="100" value="0" aria-label="Seek narration progress" title="Seek through story">
+      <input type="range" id="seek-range" min="0" max="100" value="0" aria-label="Seek narration progress">
     </div>
     <div id="story-map" class="hidden">
-      <button id="close-map" aria-label="Close story list" title="Close map">✖️</button>
+      <button id="close-map" aria-label="Close story list">✖️</button>
       <div id="story-grid" role="list"></div>
     </div>
   </div>
-  <button id="top-btn" aria-label="Back to top" title="Scroll to top">⬆️</button>
+  <button id="top-btn" aria-label="Back to top">⬆️</button>
   <noscript>
     Oops! This app needs JavaScript enabled to run.
   </noscript>
