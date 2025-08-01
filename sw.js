@@ -23,6 +23,12 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(res => res || fetch(event.request))
+const url = new URL(event.request.url);
+  if (url.origin !== location.origin) return;
+
+  event.respondWith(
+    caches.match(event.request).then(res =>
+      res || fetch(event.request).catch(() => Response.error())
+    )
   );
 });
