@@ -34,8 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fullscreenBtn = document.getElementById('fullscreen-btn'),
         starCount = document.getElementById('star-count'),
         starIcons = document.getElementById('star-icons'),
-        topBtn = document.getElementById('top-btn'),
-        loadingOverlay = document.getElementById('loading-overlay');
+        topBtn = document.getElementById('top-btn');
    // Speeds and labels
   const speeds = [0.3, 0.6, 0.9, 1.2];
   const labels = ['🐢', '🚶', '🏃', '🚀'];
@@ -91,8 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 10000))
     ]);
   }
-  // Show loading and load with error handling
-  if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+  // Load with error handling (no overlay)
   loadData().then(data => {
     categories = data || {};
     Object.keys(categories).forEach(key => {
@@ -113,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     loadBook();
-    if (loadingOverlay) loadingOverlay.classList.add('hidden');
   }).catch(err => {
     console.error('Load error:', err);
     let msg = 'Error loading stories. Using cached or placeholder data.';
@@ -125,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
       msg = 'Network error. Are you offline?';
     }
     feedbackDiv.textContent = msg;
-    if (loadingOverlay) loadingOverlay.classList.add('hidden');
     // Fallback to any cached data (even outdated) or placeholder
     const cached = localStorage.getItem('passages');
     if (cached) {
