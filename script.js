@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (err.message === 'Failed to fetch') {
       msg = 'Network error. Are you offline?';
     }
-    feedbackDiv.textContent = msg;
+    setFeedback(msg, 'error');
     // Fallback to any cached data (even outdated) or placeholder
     const cached = localStorage.getItem('passages');
     if (cached) {
@@ -351,11 +351,12 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => oldPg.remove(), 500);
     }, 300);
   }
-  // Star earning
+  // Star earning with confetti
   document.getElementById('star-btn')?.addEventListener('click', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
       updateStars();
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       updateNavButtons();
       buildStoryMap();
     }
@@ -382,12 +383,13 @@ document.addEventListener('DOMContentLoaded', () => {
     constructor() {
       this.utter = null;
       this.currentSpeakingSpan = null;
+      this.highlightTimer = null;
     }
     start(start = 0) {
       this.stop(false);
       const textElem = document.getElementById('passage-text');
       if (!textElem) {
-        feedbackDiv.textContent = 'Text element not found. Please reload.';
+        setFeedback('Text element not found. Please reload.', 'error');
         return;
       }
       let text = textElem.textContent || '';
@@ -416,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
       this.utter.onend = () => this.reset();
       this.utter.onerror = (e) => {
         console.error('Speech error:', e);
-        feedbackDiv.textContent = 'Narration error. Try a different voice or refresh.';
+        setFeedback('Narration error. Try a different voice or refresh.', 'error');
         this.reset();
       };
       try {
@@ -424,9 +426,25 @@ document.addEventListener('DOMContentLoaded', () => {
         isPlaying = true;
         isPaused = false;
         updateControlButtons();
+        // Fallback timer for highlighting if boundary event fails
+        this.highlightTimer = setInterval(() => {
+          if (charPos < text.length) {
+            charPos += Math.floor(currentSpeed * 5); // Approximate characters per interval
+            const globalIndex = Math.min(charPos, text.length - 1);
+            const range = wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
+            if (range) {
+              if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
+              range.span.classList.add('speaking');
+              this.currentSpeakingSpan = range.span;
+            }
+            updateReadProgress(globalIndex / text.length);
+          } else {
+            clearInterval(this.highlightTimer);
+          }
+        }, 100); // Check every 100ms
       } catch (e) {
         console.error('SpeechSynthesis error:', e);
-        feedbackDiv.textContent = 'Speech synthesis failed. Check browser settings.';
+        setFeedback('Speech synthesis failed. Check browser settings.', 'error');
       }
     }
     pause() {
@@ -434,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
       speechSynthesis.pause();
       isPaused = true;
       isPlaying = false;
+      clearInterval(this.highlightTimer);
       updateControlButtons();
     }
     resume() {
@@ -445,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     stop(clearSaved = true) {
       speechSynthesis.cancel();
+      clearInterval(this.highlightTimer);
       if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
       document.querySelectorAll('#passage-text .speaking').forEach(span => span.classList.remove('speaking'));
       this.currentSpeakingSpan = null;
@@ -460,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateControlButtons();
     }
     reset() {
+      clearInterval(this.highlightTimer);
       this.currentSpeakingSpan = null;
       isPlaying = false;
       isPaused = false;
@@ -476,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList;
     if (!SpeechRecognition) {
       console.warn('SpeechRecognition not supported');
-      feedbackDiv.textContent = 'Speech recognition not supported in this browser. Try Chrome.';
+      setFeedback('Speech recognition not supported in this browser. Try Chrome.', 'error');
       return;
     }
     recognition = new SpeechRecognition();
@@ -514,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
     recognition.onstart = () => {
       micBtn.disabled = true;
       micStopBtn.disabled = false;
-      feedbackDiv.textContent = 'Listening... Speak clearly and slowly in a quiet room.';
+      setFeedback('Listening... Speak clearly and slowly in a quiet room.', 'success');
       highlightNextWord(0); // Start highlighting the first word
     };
     recognition.onend = () => {
@@ -523,10 +544,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      feedbackDiv.textContent = 'Error: ' + event.error + '. Try again - speak louder or check mic permissions.';
+      setFeedback('Error: ' + event.error + '. Try again - speak louder or check mic permissions.', 'error');
     };
     recognition.onnomatch = () => {
-      feedbackDiv.textContent = 'No match found. Try speaking slower or more clearly.';
+      setFeedback('No match found. Try speaking slower or more clearly.', 'error');
     };
   }
   function highlightNextWord(index) {
@@ -565,8 +586,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     accuracyScore = (correct / expected.length) * 100;
-    feedbackDiv.textContent = `${transcript} | Score: ${accuracyScore.toFixed(0)}%`;
+    setFeedback(`${transcript} | Score: ${accuracyScore.toFixed(0)}%`, accuracyScore > 80 ? 'success' : 'error');
     updateReadProgress(correct / expected.length);
+    if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
     highlightNextWord(nextIndex);
   }
   function startVoiceCapture() {
@@ -587,8 +609,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('Unable to stop voice capture:', err);
     }
-    feedbackDiv.textContent = '';
+    setFeedback('');
     document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
+  }
+  // Set feedback with color and auto-hide
+  function setFeedback(msg, type = '') {
+    feedbackDiv.textContent = msg;
+    feedbackDiv.classList.remove('success', 'error');
+    if (type) feedbackDiv.classList.add(type);
+    if (msg) setTimeout(() => setFeedback(''), 5000); // Auto-hide after 5s
   }
   // Event listeners with null checks
   speedBtn?.addEventListener('click', adjustSpeed);
@@ -626,17 +655,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(err => console.error('SW error:', err));
   }
-
-  // Add tooltips functionality (already in CSS, but JS for dynamic)
-document.querySelectorAll('[data-tooltip]').forEach(el => {
-  el.addEventListener('mouseenter', () => {
-    // Optional: JS can enhance if needed, but CSS handles it
-  });
-});
-
-// Responsive adjustments (e.g., hide voice select on small screens if desired)
-if (window.innerWidth < 600) {
-  // Example: Hide advanced controls
-  voiceSelect.style.display = 'none';
-}
 });
