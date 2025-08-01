@@ -6,13 +6,11 @@ const ASSETS = [
   './script.js',
   './passages.json'
 ];
-
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
-
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -20,14 +18,18 @@ self.addEventListener('activate', event => {
     )
   );
 });
-
 self.addEventListener('fetch', event => {
-const url = new URL(event.request.url);
+  const url = new URL(event.request.url);
   if (url.origin !== location.origin) return;
-
   event.respondWith(
-    caches.match(event.request).then(res =>
-      res || fetch(event.request).catch(() => Response.error())
-    )
+    (async () => {
+      // Honor cache: 'no-store' by bypassing cache and always fetching from network
+      if (event.request.cache === 'no-store') {
+        return fetch(event.request).catch(() => Response.error());
+      }
+      // For other requests, cache-first
+      const cached = await caches.match(event.request);
+      return cached || fetch(event.request).catch(() => Response.error());
+    })()
   );
 });
