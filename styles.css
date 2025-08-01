@@ -5,12 +5,14 @@
   --background-opacity: 0.1;
   --fun-green: #4CAF50; /* Success */
   --fun-red: #F44336; /* Error */
+  --pastel-pink: #FFB6C1; /* New pastel for buttons */
+  --pastel-blue: #ADD8E6; /* New for backgrounds */
+  --pastel-yellow: #FFFACD; /* For highlights */
 }
 
 body {
   font-family: 'Comic Neue', sans-serif;
-  background: #fff url('https://www.transparenttextures.com/patterns/polka-dots.png') repeat;
-  background-opacity: var(--background-opacity);
+  background: linear-gradient(to bottom, var(--pastel-blue), #fff); /* Softer gradient background */
   margin: 0;
   padding: 0;
   display: flex;
@@ -47,7 +49,7 @@ body {
 .banner {
   width: 100%;
   height: 200px;
-  background: linear-gradient(to bottom, var(--secondary) 60%, #E0FFFF);
+  background: linear-gradient(to bottom, var(--secondary) 60%, var(--pastel-blue));
   position: relative;
   overflow: hidden;
   border-bottom: 5px solid var(--accent);
@@ -120,13 +122,16 @@ body {
 /* Progress bar with improved visuals */
 #progress-container {
   margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 #progress-bar {
   position: relative;
   width: 100%;
   height: 20px;
-  background: #ddd;
+  background: var(--pastel-yellow);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 5px;
@@ -137,7 +142,7 @@ body {
   position: relative;
   width: 100%;
   height: 12px;
-  background: #eee;
+  background: var(--pastel-pink);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 10px;
@@ -170,6 +175,9 @@ body {
   font-size: 1.4em;
   color: var(--secondary);
   font-weight: bold;
+  background: var(--pastel-yellow);
+  padding: 5px 10px;
+  border-radius: 20px;
 }
 
 /* Book & page with smoother transitions */
@@ -177,7 +185,7 @@ body {
   position: relative;
   width: 100%;
   height: 650px;
-  background: #fffacd;
+  background: var(--pastel-yellow);
   border-radius: 10px;
   box-shadow: 0 0 15px rgba(0,0,0,0.2);
   overflow: auto;
@@ -244,13 +252,16 @@ body {
   justify-content: center;
   gap: 10px;
   margin-bottom: 10px;
+  background: var(--pastel-blue);
+  padding: 10px;
+  border-radius: 15px;
 }
 
 button {
   width: 80px;
   height: 80px;
   font-size: 1.5em;
-  background: linear-gradient(45deg, #ff69b4, var(--primary));
+  background: linear-gradient(45deg, var(--pastel-pink), var(--primary));
   color: white;
   border: none;
   border-radius: 50%;
@@ -317,6 +328,13 @@ button:disabled {
   cursor: pointer;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   transition: transform 0.3s, box-shadow 0.3s;
+  opacity: 1; /* Ensure no transparency */
+}
+
+.story-card img {
+  width: 100%;
+  height: auto;
+  opacity: 1; /* Fix transparent images */
 }
 
 .story-card:hover {
@@ -350,7 +368,7 @@ button:disabled {
 
 /* Word highlights */
 .word.speaking {
-  background: rgba(255,255,0,0.5);
+  background: var(--pastel-yellow);
   border-radius: 3px;
   transition: background 0.2s;
 }
