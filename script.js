@@ -626,4 +626,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(err => console.error('SW error:', err));
   }
+
+  // Add tooltips functionality (already in CSS, but JS for dynamic)
+document.querySelectorAll('[data-tooltip]').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    // Optional: JS can enhance if needed, but CSS handles it
+  });
+});
+
+// Responsive adjustments (e.g., hide voice select on small screens if desired)
+if (window.innerWidth < 600) {
+  // Example: Hide advanced controls
+  voiceSelect.style.display = 'none';
+}
 });
