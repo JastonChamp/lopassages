@@ -3,10 +3,8 @@
   --secondary: #87CEEB; /* Blue */
   --accent: #FFD700; /* Gold */
   --background-opacity: 0.1;
-  --text-color: #333;
-  --light-text: #666;
-  --button-bg: linear-gradient(45deg, #FF69B4, #FF4500);
-  --button-hover: scale(1.1);
+  --fun-green: #4CAF50; /* Success */
+  --fun-red: #F44336; /* Error */
 }
 
 body {
@@ -19,7 +17,6 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  color: var(--text-color);
 }
 
 .dark-mode {
@@ -41,33 +38,38 @@ body {
   text-align: center;
   padding: 20px;
   background: rgba(255,255,255,0.95);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
   margin: 30px;
 }
 
-/* Banner with enhanced gradient and animations */
+/* Banner with softened gradient and enhanced animations */
 .banner {
   width: 100%;
-  height: 180px;
+  height: 200px;
   background: linear-gradient(to bottom, var(--secondary) 60%, #E0FFFF);
   position: relative;
   overflow: hidden;
   border-bottom: 5px solid var(--accent);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   margin-bottom: 20px;
-  border-radius: 15px 15px 0 0;
+  animation: fadeIn 1s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .banner-title {
   font-family: 'Baloo 2', cursive;
-  font-size: 2.8em;
+  font-size: 2.5em;
   color: var(--accent);
-  text-shadow: 1px 1px 3px #000;
+  text-shadow: 2px 2px 4px #000;
   animation: wave 3s infinite ease-in-out;
   position: relative;
   z-index: 2;
@@ -93,35 +95,75 @@ body {
   width: 80px;
   height: 80px;
   background-size: cover;
-  animation: float 2s infinite ease-in-out;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  animation: float 2s infinite ease-in-out, bounce 1s infinite alternate;
 }
 
-/* Progress bar with smoother transitions */
+.book-character {
+  background: url('https://via.placeholder.com/80x80.png?text=Book') no-repeat;
+}
+
+.cat-character {
+  background: url('https://via.placeholder.com/80x80.png?text=Cat') no-repeat;
+  animation-delay: 0.5s;
+}
+
+.star-character {
+  background: url('https://via.placeholder.com/80x80.png?text=Star') no-repeat;
+  animation-delay: 1s;
+}
+
+@keyframes bounce {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+/* Progress bar with improved visuals */
 #progress-container {
   margin-bottom: 15px;
 }
 
-#progress-bar, #read-progress-bar {
+#progress-bar {
   position: relative;
   width: 100%;
-  height: 12px;
-  background: #eee;
+  height: 20px;
+  background: #ddd;
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 5px;
   transition: width 0.5s ease;
 }
 
-#progress-bar::after, #read-progress-bar::after {
+#read-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  transition: width 0.3s ease;
+}
+
+#read-progress-bar::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(to right, var(--secondary), #4CAF50);
+  background: linear-gradient(to right, var(--secondary), var(--fun-green));
   width: calc(var(--progress, 0) * 100%);
-  transition: width 0.4s ease-in-out;
+  transition: width 0.3s ease;
+}
+
+#progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(to right, #ff69b4, var(--primary));
+  width: calc((var(--current) / var(--total)) * 100%);
+  transition: width 0.5s ease;
 }
 
 #story-progress {
@@ -130,17 +172,17 @@ body {
   font-weight: bold;
 }
 
-/* Book & page with improved scrolling and shadows */
+/* Book & page with smoother transitions */
 #book {
   position: relative;
   width: 100%;
   height: 650px;
   background: #fffacd;
   border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
   overflow: auto;
   margin-bottom: 15px;
-  padding: 10px;
+  transition: all 0.3s ease;
 }
 
 #page {
@@ -150,107 +192,99 @@ body {
   box-sizing: border-box;
   background: white;
   border-radius: 5px;
-  transition: opacity 0.5s ease;
-  opacity: 0;
+  transition: transform 0.5s ease-in-out, opacity 0.5s;
 }
 
-#page.loaded {
-  opacity: 1;
-}
-
-/* Passage content with better spacing */
+/* Passage header */
 #passage-title {
-  font-size: 2.2em;
+  font-size: 2em;
   color: var(--primary);
   text-align: left;
-  margin-bottom: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid var(--accent);
 }
 
 #passage-info {
   font-size: 1.2em;
-  color: var(--light-text);
+  color: var(--secondary);
   text-align: left;
   margin-bottom: 15px;
 }
 
+/* Text & image */
 #passage-text {
-  font-size: 1.6em;
+  font-size: 1.5em;
   line-height: 1.8;
+  color: #333;
   text-align: left;
-  margin-bottom: 20px;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid var(--accent);
+}
+
+#passage-text p {
+  margin-bottom: 1em;
+  transition: color 0.3s;
 }
 
 #passage-image {
-  max-width: 100%;
-  height: auto;
+  display: block;
+  margin: 15px auto;
+  max-width: 350px;
+  border: 5px solid var(--accent);
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  animation: fadeIn 0.5s ease;
+  animation: float 3s infinite ease-in-out;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Controls: Grouped, larger, with tooltips */
+/* Controls with improved grouping and responsiveness */
 #controls {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 button {
-  width: 60px;
-  height: 60px;
-  font-size: 1.4em;
-  background: var(--button-bg);
+  width: 80px;
+  height: 80px;
+  font-size: 1.5em;
+  background: linear-gradient(45deg, #ff69b4, var(--primary));
   color: white;
   border: none;
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
-  position: relative;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 button:hover {
-  transform: var(--button-hover);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
 }
 
 button:disabled {
   background: #ccc;
   cursor: not-allowed;
+  transform: scale(1);
+  box-shadow: none;
 }
 
-button[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: white;
-  padding: 5px 10px;
+#seek-range {
+  width: 80%;
+  margin: 10px auto;
+  height: 10px;
+  cursor: pointer;
+  background: var(--secondary);
   border-radius: 5px;
-  font-size: 0.8em;
-  white-space: nowrap;
-  z-index: 10;
 }
 
-/* Feedback with fun icons */
-#feedback {
-  margin-top: 10px;
-  font-size: 1.2em;
-  color: var(--primary);
-  padding: 10px;
-  border-radius: 10px;
-  background: rgba(var(--accent), 0.1);
+/* Story map with hover effects and fixed hidden class */
+.hidden {
+  display: none !important;
 }
 
-/* Story map with grid improvements */
 #story-map {
   position: fixed;
   top: 0;
@@ -261,8 +295,12 @@ button[data-tooltip]:hover::after {
   overflow-y: auto;
   z-index: 1000;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
+  transition: opacity 0.3s;
+  opacity: 0;
+}
+
+#story-map:not(.hidden) {
+  opacity: 1;
 }
 
 #story-grid {
@@ -278,11 +316,12 @@ button[data-tooltip]:hover::after {
   background: white;
   cursor: pointer;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  transition: transform 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .story-card:hover {
   transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
 }
 
 .story-card.locked {
@@ -290,39 +329,64 @@ button[data-tooltip]:hover::after {
   cursor: not-allowed;
 }
 
+/* Feedback with colors */
+#feedback {
+  margin-top: 10px;
+  font-size: 1.2em;
+  padding: 10px;
+  border-radius: 5px;
+  transition: background 0.3s;
+}
+
+#feedback.success {
+  background: var(--fun-green);
+  color: white;
+}
+
+#feedback.error {
+  background: var(--fun-red);
+  color: white;
+}
+
+/* Word highlights */
+.word.speaking {
+  background: rgba(255,255,0,0.5);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
 /* Responsive design */
 @media (max-width: 600px) {
   #controls {
-    flex-direction: column;
-    gap: 15px;
+    gap: 5px;
   }
-
   button {
-    width: 80px;
-    height: 80px;
-    font-size: 1.6em;
+    width: 60px;
+    height: 60px;
+    font-size: 1.2em;
   }
-
-  #book {
-    height: auto;
-  }
-
   #passage-text {
-    font-size: 1.4em;
+    font-size: 1.3em;
+  }
+  .banner {
+    height: 150px;
+  }
+  .banner-title {
+    font-size: 2em;
   }
 }
 
-/* Top button with animation */
+/* Back to top */
 #top-btn {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
-  font-size: 1.4em;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5em;
   border-radius: 50%;
   background: var(--accent);
-  color: #000;
+  color: #fff;
   border: none;
   cursor: pointer;
   display: none;
@@ -332,5 +396,4 @@ button[data-tooltip]:hover::after {
 
 #top-btn.show {
   display: block;
-  opacity: 1;
 }
