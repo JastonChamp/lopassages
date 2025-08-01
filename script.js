@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     text: "More adventures are on the way! Check back later. 🎉",
     image: "placeholder.png"
   };
-  // Enhanced loadData with abortable fetch and timeout
+  // Enhanced loadData with full timeout via Promise.race
   async function loadData() {
     const cached = localStorage.getItem('passages');
     if (cached) {
@@ -74,17 +74,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 10000);
-    let response;
-    try {
-      response = await fetch('passages.json', { cache: 'no-store', signal: controller.signal });
-    } finally {
-      clearTimeout(id);
-    }
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
-    localStorage.setItem('passages', JSON.stringify({ version: VERSION, data }));
-    return data;
+    const fetchPromise = fetch('passages.json', { cache: 'no-store', signal: controller.signal })
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        localStorage.setItem('passages', JSON.stringify({ version: VERSION, data }));
+        return data;
+      });
+    return Promise.race([
+      fetchPromise,
+      new Promise((_, reject) => setTimeout(() => {
+        controller.abort();
+        reject(new Error('Load timeout after 10s'));
+      }, 10000))
+    ]);
   }
   // Show loading and load with error handling
   if (loadingOverlay) loadingOverlay.classList.remove('hidden');
@@ -110,12 +115,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBook();
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
   }).catch(err => {
-    console.error('Load promise error:', err);
-    let msg = 'Critical error. Please reload or contact support.';
-    if (err.name === 'AbortError') {
-      msg = 'Loading timed out after 10s. Check your connection and try again.';
+    console.error('Load error:', err);
+    let msg = 'Error loading stories. Using cached or placeholder data.';
+    if (err.message === 'Load timeout after 10s' || err.name === 'AbortError') {
+      msg = 'Loading timed out. Check your connection and refresh.';
     } else if (err.message.startsWith('HTTP error')) {
-      msg = 'Failed to load stories. Server issue?';
+      msg = 'Server error loading stories.';
     } else if (err.message === 'Failed to fetch') {
       msg = 'Network error. Are you offline?';
     }
