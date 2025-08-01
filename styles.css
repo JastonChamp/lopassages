@@ -257,6 +257,30 @@ body {
   border-radius: 15px;
 }
 
+select {
+  background: var(--pastel-pink);
+  border: none;
+  border-radius: 20px;
+  padding: 10px;
+  font-family: 'Comic Neue', sans-serif;
+  font-size: 1.2em;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  appearance: none; /* Remove default arrow */
+  background-image: url('data:image/svg+xml;utf8,<svg fill="gray" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* Custom arrow */
+  background-repeat: no-repeat;
+  background-position-x: 100%;
+  background-position-y: 50%;
+  padding-right: 30px; /* Space for arrow */
+}
+
+select:hover {
+  background: #ff69b4;
+  color: white;
+}
+
 button {
   width: 80px;
   height: 80px;
