@@ -39,10 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         topBtn = document.getElementById('top-btn'),
         loadingOverlay = document.getElementById('loading-overlay');
 
-  // Debugging: Log initial DOM elements
-  console.log({ voiceSelect, readProgressBar, seekRange, bookSelect, loadingOverlay });
-
-  // Speeds and labels
+   // Speeds and labels
   const speeds = [0.3, 0.6, 0.9, 1.2];
   const labels = ['🐢', '🚶', '🏃', '🚀'];
   speedBtn && (speedBtn.textContent = labels[speeds.indexOf(currentSpeed)]);
