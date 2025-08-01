@@ -22,7 +22,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
 const url = new URL(event.request.url);
   if (url.origin !== location.origin) return;
 
