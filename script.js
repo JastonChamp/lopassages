@@ -14,9 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       accuracyScore = 0,
       currentWordIndex = 0,
       micPermissionGranted = false;
-  const whooshSound = document.getElementById('whoosh-sound'),
-        cheerSound = document.getElementById('cheer-sound'),
-        speedBtn = document.getElementById('speed-btn'),
+  const speedBtn = document.getElementById('speed-btn'),
         playBtn = document.getElementById('play-btn'),
         pauseBtn = document.getElementById('pause-btn'),
         resumeBtn = document.getElementById('resume-btn'),
@@ -336,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function flipTo(idx, dir) {
     if (idx < 0 || idx >= passages.length) return;
     narrator.stop(true);
-    whooshSound.play();
     const oldPg = document.getElementById('page');
     if (!oldPg) return;
     oldPg.innerHTML = '<div class="loader"></div>';
@@ -358,8 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
       updateStars();
-      cheerSound.play();
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       updateNavButtons();
       buildStoryMap();
     }
@@ -571,7 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
     accuracyScore = (correct / expected.length) * 100;
     feedbackDiv.textContent = `${transcript} | Score: ${accuracyScore.toFixed(0)}%`;
     updateReadProgress(correct / expected.length);
-    if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
     highlightNextWord(nextIndex);
   }
   function startVoiceCapture() {
