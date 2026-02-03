@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isPaused = false,
       recognition = null,
       accuracyScore = 0,
-      currentWordIndex = 0,
       micPermissionGranted = false;
   const speedBtn = document.getElementById('speed-btn'),
         playBtn = document.getElementById('play-btn'),
@@ -63,6 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
     text: "More adventures are on the way! Check back later. 🎉",
     image: "placeholder.png"
   };
+  // Inline SVG for offline support (no external CDN dependency)
+  const placeholderImageSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'%3E%3Crect fill='%23E0E0E0' width='120' height='80' rx='5'/%3E%3Ctext x='60' y='45' font-size='12' text-anchor='middle' fill='%23666'%3ENo Image%3C/text%3E%3C/svg%3E";
+  // Safe confetti wrapper for graceful degradation
+  const safeConfetti = (options) => {
+    if (typeof confetti === 'function') {
+      try { confetti(options); } catch (e) { console.warn('Confetti error:', e); }
+    }
+  };
   // Enhanced loadData with full timeout via Promise.race
   async function loadData() {
     const cached = localStorage.getItem('passages');
@@ -105,10 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
         bookSelect.appendChild(opt);
       });
       bookSelect.value = currentBook;
-      bookSelect.addEventListener('change', () => {
-        currentBook = bookSelect.value;
-        loadBook();
-      });
     }
     loadBook();
   }).catch(err => {
@@ -139,10 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
         bookSelect.appendChild(opt);
       });
       bookSelect.value = currentBook;
-      bookSelect.addEventListener('change', () => {
-        currentBook = bookSelect.value;
-        loadBook();
-      });
     }
     loadBook();
   });
@@ -184,11 +183,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
   bookSelect?.addEventListener('change', () => {
-    if (!isBookUnlocked(currentBook)) {
+    const selectedBook = bookSelect.value;
+    if (!isBookUnlocked(selectedBook)) {
       alert('Complete more stories in previous books to unlock!');
-      bookSelect.value = 'book1';
-      currentBook = 'book1';
+      bookSelect.value = currentBook; // Revert to previous book
+      return;
     }
+    currentBook = selectedBook;
     loadBook();
   });
   // Show passage
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const p = passages[i];
     if (!p || !container) return;
     wordRanges = [];
-    const imgPath = p.image ? `images/${p.image}` : 'https://via.placeholder.com/120x80.png?text=No+Image';
+    const imgPath = p.image ? `images/${p.image}` : placeholderImageSvg;
     const altText = p.image ? `Illustration for ${p.title.replace(/<[^>]+>/g, '')}` : 'Placeholder image';
     const imgTag = `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${altText}">`;
     const formattedText = formatText(p.text);
@@ -218,9 +219,15 @@ document.addEventListener('DOMContentLoaded', () => {
     updateControlButtons();
     updateReadProgress(0);
     charPos = 0;
-    // Preload next/prev images
-    if (i > 0) new Image().src = `images/${passages[i-1].image}`;
-    if (i < passages.length - 1) new Image().src = `images/${passages[i+1].image}`;
+    // Preload next/prev images with error handling
+    const preloadImage = (src) => {
+      if (!src) return;
+      const img = new Image();
+      img.onerror = () => console.warn(`Failed to preload: ${src}`);
+      img.src = `images/${src}`;
+    };
+    if (i > 0 && passages[i-1]?.image) preloadImage(passages[i-1].image);
+    if (i < passages.length - 1 && passages[i+1]?.image) preloadImage(passages[i+1].image);
   }
   // Clean text for TTS
   function cleanForTTS(text) {
@@ -318,8 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
       card.tabIndex = 0; // Keyboard focus
       card.role = 'listitem';
       if (idx > stars) card.classList.add('locked');
-      const imgPath = p.image ? `images/${p.image}` : 'https://via.placeholder.com/120x80.png?text=No+Image';
-      card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title} illustration"><div class="story-title">${p.title}</div>`;
+      const imgPath = p.image ? `images/${p.image}` : placeholderImageSvg;
+      card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')} illustration"><div class="story-title">${p.title}</div>`;
       card.addEventListener('click', () => {
         if (idx <= stars) {
           storyMap.classList.add('hidden');
@@ -356,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentIndex > 0 && stars < passages.length) {
       stars++;
       updateStars();
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      safeConfetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       updateNavButtons();
       buildStoryMap();
     }
@@ -552,8 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function highlightNextWord(index) {
     document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
-    const span = document.querySelector(`#passage-text .word:nth-child(${index + 1})`);
-    if (span) span.classList.add('next-word');
+    const words = document.querySelectorAll('#passage-text .word');
+    if (words[index]) words[index].classList.add('next-word');
   }
   function similarity(s1, s2) {
     s1 = s1.toLowerCase();
@@ -566,17 +573,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function highlightReading(transcript, storyText) {
     const expected = storyText.split(/\s+/);
     const spoken = transcript.trim().split(/\s+/);
+    const wordSpans = document.querySelectorAll('#passage-text .word');
     let correct = 0;
     let nextIndex = expected.length;
     expected.forEach((word, i) => {
-      const span = document.querySelector(`#passage-text .word:nth-child(${i + 1})`);
+      const span = wordSpans[i];
       if (!span) return;
       span.classList.remove('correct', 'incorrect');
       if (spoken[i]) {
         if (spoken[i].toLowerCase() === word.toLowerCase() || similarity(spoken[i], word) > 80) {
           span.classList.add('correct');
           correct++;
-          currentWordIndex = i + 1;
         } else {
           span.classList.add('incorrect');
           nextIndex = Math.min(nextIndex, i);
@@ -588,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     accuracyScore = (correct / expected.length) * 100;
     setFeedback(`${transcript} | Score: ${accuracyScore.toFixed(0)}%`, accuracyScore > 80 ? 'success' : 'error');
     updateReadProgress(correct / expected.length);
-    if (accuracyScore > 80) confetti({ particleCount: 50, spread: 50 });
+    if (accuracyScore > 80) safeConfetti({ particleCount: 50, spread: 50 });
     highlightNextWord(nextIndex);
   }
   function startVoiceCapture() {
