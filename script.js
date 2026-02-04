@@ -87,8 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
       autoAdvance: true,
       wordHints: true,
       textSize: 1.5,
-      theme: 'light'
-    }
+      theme: 'light',
+      showMascot: true
+    },
+    focusMode: false
   };
 
   // ===== DOM Elements =====
@@ -162,7 +164,26 @@ document.addEventListener('DOMContentLoaded', () => {
     textSize: $('text-size'),
     autoAdvance: $('auto-advance'),
     wordHintsCheckbox: $('word-hints'),
-    resetProgress: $('reset-progress')
+    showMascotCheckbox: $('show-mascot'),
+    resetProgress: $('reset-progress'),
+
+    // Focus mode
+    focusModeBtn: $('focus-mode-btn'),
+
+    // Mascot
+    mascotHelper: $('mascot-helper'),
+    mascotBubble: $('mascot-bubble'),
+    mascotMessage: $('mascot-message'),
+    mascotCharacter: $('mascot-character'),
+
+    // Celebration
+    celebrationOverlay: $('celebration-overlay'),
+    celebrationTitle: $('celebration-title'),
+    celebrationMessage: $('celebration-message'),
+
+    // Achievements count
+    unlockedCount: $('unlocked-count'),
+    totalAchievements: $('total-achievements')
   };
 
   // ===== Utility Functions =====
@@ -195,6 +216,71 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const stripHtml = (html) => html.replace(/<[^>]+>/g, '');
+
+  // ===== Mascot Messages =====
+  const MASCOT_MESSAGES = {
+    welcome: ["Hi! I'm Buddy! Let's read together!", "Ready to read? Let's go!", "Welcome back, superstar!"],
+    playing: ["Great! Listen carefully!", "Follow along with the words!", "You're doing awesome!"],
+    recording: ["I'm listening! Read to me!", "Speak clearly, you've got this!", "Take your time!"],
+    correct: ["Amazing job!", "You're a reading star!", "Fantastic!", "Keep it up!", "Wow, so good!"],
+    encouragement: ["You can do it!", "Try again, I believe in you!", "Practice makes perfect!"],
+    starEarned: ["You earned a star!", "Awesome! Another star!", "You're a superstar!"],
+    storyComplete: ["Great story!", "You finished it!", "Ready for the next one?"]
+  };
+
+  const getRandomMessage = (category) => {
+    const messages = MASCOT_MESSAGES[category] || MASCOT_MESSAGES.welcome;
+    return messages[Math.floor(Math.random() * messages.length)];
+  };
+
+  const showMascotMessage = (category, duration = 4000) => {
+    if (!state.settings.showMascot || !elements.mascotMessage) return;
+
+    const message = getRandomMessage(category);
+    elements.mascotMessage.textContent = message;
+
+    // Animate bubble
+    if (elements.mascotBubble) {
+      elements.mascotBubble.style.animation = 'none';
+      elements.mascotBubble.offsetHeight; // Trigger reflow
+      elements.mascotBubble.style.animation = 'bubblePop 0.3s ease';
+    }
+
+    // Auto-hide after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        if (elements.mascotMessage) {
+          elements.mascotMessage.textContent = getRandomMessage('welcome');
+        }
+      }, duration);
+    }
+  };
+
+  const toggleFocusMode = () => {
+    state.focusMode = !state.focusMode;
+    document.body.classList.toggle('focus-mode', state.focusMode);
+
+    if (elements.focusModeBtn) {
+      elements.focusModeBtn.textContent = state.focusMode ? '📺' : '📖';
+      elements.focusModeBtn.title = state.focusMode ? 'Exit Focus Mode' : 'Focus Mode';
+    }
+
+    setFeedback(state.focusMode ? 'Focus mode: ON - Distraction-free reading!' : 'Focus mode: OFF', 'info');
+  };
+
+  const showCelebration = (title, message, duration = 2500) => {
+    if (!elements.celebrationOverlay) return;
+
+    if (elements.celebrationTitle) elements.celebrationTitle.textContent = title;
+    if (elements.celebrationMessage) elements.celebrationMessage.textContent = message;
+
+    elements.celebrationOverlay.classList.remove('hidden');
+    safeConfetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+
+    setTimeout(() => {
+      elements.celebrationOverlay.classList.add('hidden');
+    }, duration);
+  };
 
   // ===== Storage Functions =====
   const saveState = () => {
@@ -658,8 +744,18 @@ document.addEventListener('DOMContentLoaded', () => {
       this.currentSpan = this.wordSpans[index];
       this.currentSpan.classList.add('speaking');
 
-      // Scroll word into view if needed
-      this.currentSpan.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      // Scroll word into view within the book container only (not the whole page)
+      const bookContainer = document.querySelector('.book-container');
+      if (bookContainer && this.currentSpan) {
+        const containerRect = bookContainer.getBoundingClientRect();
+        const wordRect = this.currentSpan.getBoundingClientRect();
+
+        // Only scroll if word is outside the visible area of the container
+        if (wordRect.top < containerRect.top + 50 || wordRect.bottom > containerRect.bottom - 50) {
+          const scrollTop = this.currentSpan.offsetTop - bookContainer.offsetTop - (containerRect.height / 2);
+          bookContainer.scrollTo({ top: scrollTop, behavior: 'smooth' });
+        }
+      }
 
       state.charPos = index;
     }
@@ -828,7 +924,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const words = document.querySelectorAll('.passage-text .word');
     if (words[index]) {
       words[index].classList.add('next-word');
-      words[index].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+      // Scroll within book container only
+      const bookContainer = document.querySelector('.book-container');
+      if (bookContainer) {
+        const containerRect = bookContainer.getBoundingClientRect();
+        const wordRect = words[index].getBoundingClientRect();
+
+        if (wordRect.top < containerRect.top + 50 || wordRect.bottom > containerRect.bottom - 50) {
+          const scrollTop = words[index].offsetTop - bookContainer.offsetTop - (containerRect.height / 2);
+          bookContainer.scrollTo({ top: scrollTop, behavior: 'smooth' });
+        }
+      }
     }
   };
 
