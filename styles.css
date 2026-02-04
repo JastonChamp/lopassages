@@ -1305,3 +1305,105 @@ body {
     --shadow-md: 0 0 0 2px #000;
   }
 }
+
+/* ===== Password Lock Screen ===== */
+.password-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.password-screen.hidden {
+  display: none;
+}
+
+.password-container {
+  background: var(--bg-secondary);
+  padding: var(--space-2xl);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  animation: slideUp 0.5s ease;
+}
+
+.password-icon {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+  animation: bounce 2s infinite;
+}
+
+.password-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--space-sm);
+}
+
+.password-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+.password-input {
+  width: 100%;
+  padding: var(--space-md);
+  font-size: 1.2rem;
+  font-family: var(--font-primary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+  text-align: center;
+  transition: var(--transition-normal);
+}
+
+.password-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.password-btn {
+  width: 100%;
+  padding: var(--space-md);
+  font-size: 1.1rem;
+  font-family: var(--font-primary);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.password-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.password-error {
+  color: var(--error);
+  margin-top: var(--space-md);
+  font-weight: 600;
+  animation: shake 0.3s ease;
+}
+
+.password-error.hidden {
+  display: none;
+}
+
+#app.hidden {
+  display: none;
+}
