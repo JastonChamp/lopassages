@@ -643,6 +643,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // Show mascot encouragement
+      showMascotMessage('playing', 3000);
+
       // Get all word spans for highlighting
       this.wordSpans = Array.from(document.querySelectorAll('.passage-text .word'));
       if (this.wordSpans.length === 0) {
@@ -1078,6 +1081,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.accuracyScore > 80) {
       safeConfetti({ particleCount: 50, spread: 50 });
+      showMascotMessage('correct', 3000);
+    } else if (state.accuracyScore > 40) {
+      showMascotMessage('encouragement', 3000);
     }
 
     highlightNextWord(nextIndex);
@@ -1093,6 +1099,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset accumulated transcript for fresh start
     accumulatedTranscript = '';
     shouldRestartRecognition = true;
+
+    // Show mascot encouragement
+    showMascotMessage('recording', 3000);
 
     try {
       state.recognition?.start();
@@ -1378,6 +1387,28 @@ document.addEventListener('DOMContentLoaded', () => {
       saveState();
     });
 
+    // Mascot visibility
+    elements.showMascotCheckbox?.addEventListener('change', (e) => {
+      state.settings.showMascot = e.target.checked;
+      if (elements.mascotHelper) {
+        elements.mascotHelper.classList.toggle('hidden', !e.target.checked);
+      }
+      saveState();
+    });
+
+    // Focus mode toggle
+    elements.focusModeBtn?.addEventListener('click', toggleFocusMode);
+
+    // Mascot click for encouragement
+    elements.mascotCharacter?.addEventListener('click', () => {
+      showMascotMessage('encouragement');
+    });
+
+    // Celebration overlay click to dismiss
+    elements.celebrationOverlay?.addEventListener('click', () => {
+      elements.celebrationOverlay.classList.add('hidden');
+    });
+
     elements.resetProgress?.addEventListener('click', () => {
       if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
         localStorage.removeItem('phonicsworld_state');
@@ -1517,6 +1548,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setupEventListeners();
+
+    // Initialize mascot visibility
+    if (elements.mascotHelper) {
+      elements.mascotHelper.classList.toggle('hidden', !state.settings.showMascot);
+    }
+    if (elements.showMascotCheckbox) {
+      elements.showMascotCheckbox.checked = state.settings.showMascot;
+    }
+
+    // Show welcome mascot message
+    setTimeout(() => showMascotMessage('welcome', 5000), 1000);
 
     // Register service worker
     if ('serviceWorker' in navigator) {
