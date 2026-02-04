@@ -1,8 +1,11 @@
 {
-  "name": "Fun Phonics Adventure",
-  "short_name": "Phonics",
-"start_url": "index.html",
+  "name": "PhonicsWorld - Learn to Read!",
+  "short_name": "PhonicsWorld",
+  "description": "A world-class interactive reading app for children with speech recognition, achievements, and engaging stories.",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff"
+  "background_color": "#F8F9FE",
+  "theme_color": "#6C5CE7",
+  "orientation": "any",
+  "categories": ["education", "kids", "books"]
 }

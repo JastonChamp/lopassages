@@ -3,67 +3,325 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Interactive phonics adventures for kids! Fun stories with narration and reading practice.">
-  <title>Fun Phonics Adventure!</title>
+  <meta name="description" content="PhonicsWorld - A world-class interactive reading app for children with AI-powered speech recognition, achievements, and engaging stories.">
+  <meta name="theme-color" content="#6C5CE7">
+  <title>PhonicsWorld - Learn to Read!</title>
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2&family=Comic+Neue&display=swap" rel="stylesheet">
-  <link rel="manifest" href="manifest.json"> <!-- For PWA -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Fredoka+One&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <div id="game-container">
-    <div class="banner" aria-label="Fun Phonics Adventure Banner">
-      <h1 class="banner-title">Fun Phonics Adventure! 🎉</h1>
-      <div class="banner-characters">
-        <div class="book-character" role="img" aria-label="Book"></div>
-        <div class="cat-character" role="img" aria-label="Cat"></div>
-        <div class="star-character" role="img" aria-label="Star"></div>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">📚</span>
+          <span class="logo-text">PhonicsWorld</span>
+        </div>
+      </div>
+      <div class="header-center">
+        <div class="streak-display" id="streak-display" title="Reading Streak">
+          <span class="streak-icon">🔥</span>
+          <span class="streak-count" id="streak-count">0</span>
+          <span class="streak-label">day streak</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="achievements-btn" title="Achievements">🏆</button>
+        <button class="icon-btn" id="settings-btn" title="Settings">⚙️</button>
+        <button class="icon-btn" id="dark-mode-btn" title="Toggle Dark Mode">🌙</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Stats Bar -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <span class="stat-value" id="star-count">0</span>
+            <span class="stat-label">Stars</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">📖</div>
+          <div class="stat-info">
+            <span class="stat-value" id="stories-read">0</span>
+            <span class="stat-label">Stories Read</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-info">
+            <span class="stat-value" id="accuracy-stat">0%</span>
+            <span class="stat-label">Accuracy</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <span class="stat-value" id="time-spent">0m</span>
+            <span class="stat-label">Reading Time</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Book Selector -->
+      <div class="book-selector">
+        <label for="book-select" class="selector-label">Choose Your Adventure:</label>
+        <select id="book-select" class="fancy-select"></select>
+      </div>
+
+      <!-- Progress Section -->
+      <div class="progress-section">
+        <div class="progress-header">
+          <span class="progress-title">Story Progress</span>
+          <span class="progress-text"><span id="current-story">1</span> of <span id="total-stories">13</span></span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-bar"></div>
+          <div class="progress-stars" id="progress-stars"></div>
+        </div>
+      </div>
+
+      <!-- Reading Area -->
+      <div class="reading-area">
+        <div class="book-container" id="book">
+          <div class="page" id="page">
+            <div class="page-loader">
+              <div class="loader-spinner"></div>
+              <p>Loading your story...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reading Progress -->
+        <div class="reading-progress">
+          <div class="reading-progress-track">
+            <div class="reading-progress-fill" id="read-progress-bar"></div>
+          </div>
+          <input type="range" id="seek-range" min="0" max="100" value="0" class="seek-slider" aria-label="Reading progress">
+        </div>
+      </div>
+
+      <!-- Control Panel -->
+      <div class="control-panel">
+        <div class="control-group navigation-controls">
+          <button class="control-btn" id="prev-btn" disabled title="Previous Story">
+            <span class="btn-icon">◀</span>
+            <span class="btn-label">Back</span>
+          </button>
+          <button class="control-btn primary" id="map-btn" title="Story Map">
+            <span class="btn-icon">🗺️</span>
+            <span class="btn-label">Stories</span>
+          </button>
+          <button class="control-btn" id="next-btn" disabled title="Next Story">
+            <span class="btn-icon">▶</span>
+            <span class="btn-label">Next</span>
+          </button>
+        </div>
+
+        <div class="control-group playback-controls">
+          <button class="control-btn play-btn" id="play-btn" title="Play Narration">
+            <span class="btn-icon">▶️</span>
+            <span class="btn-label">Play</span>
+          </button>
+          <button class="control-btn" id="pause-btn" disabled title="Pause">
+            <span class="btn-icon">⏸️</span>
+            <span class="btn-label">Pause</span>
+          </button>
+          <button class="control-btn" id="resume-btn" disabled title="Resume" style="display:none;">
+            <span class="btn-icon">▶️</span>
+            <span class="btn-label">Resume</span>
+          </button>
+          <button class="control-btn" id="stop-btn" disabled title="Stop">
+            <span class="btn-icon">⏹️</span>
+            <span class="btn-label">Stop</span>
+          </button>
+          <button class="control-btn" id="speed-btn" title="Reading Speed">
+            <span class="btn-icon">🐢</span>
+            <span class="btn-label">Speed</span>
+          </button>
+        </div>
+
+        <div class="control-group voice-controls">
+          <button class="control-btn mic-btn" id="mic-btn" title="Practice Reading Aloud">
+            <span class="btn-icon">🎤</span>
+            <span class="btn-label">Read</span>
+          </button>
+          <button class="control-btn" id="mic-stop-btn" disabled title="Stop Recording">
+            <span class="btn-icon">⏹️</span>
+            <span class="btn-label">Stop</span>
+          </button>
+          <button class="control-btn star-btn" id="star-btn" disabled title="Earn a Star">
+            <span class="btn-icon">⭐</span>
+            <span class="btn-label">Earn Star</span>
+          </button>
+        </div>
+
+        <div class="control-group utility-controls">
+          <select id="voice-select" class="voice-select" aria-label="Choose voice"></select>
+          <button class="control-btn" id="fullscreen-btn" title="Fullscreen">
+            <span class="btn-icon">🖥️</span>
+            <span class="btn-label">Full</span>
+          </button>
+          <button class="control-btn" id="help-btn" title="Help">
+            <span class="btn-icon">❓</span>
+            <span class="btn-label">Help</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Feedback Area -->
+      <div class="feedback-area" id="feedback" aria-live="polite"></div>
+    </main>
+
+    <!-- Story Map Modal -->
+    <div class="modal hidden" id="story-map">
+      <div class="modal-content story-map-content">
+        <div class="modal-header">
+          <h2>📚 Story Map</h2>
+          <button class="close-btn" id="close-map" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="story-grid" class="story-grid" role="list"></div>
+        </div>
       </div>
     </div>
-    <div id="progress-container">
-      <div id="progress-bar"></div>
-      <div id="read-progress-bar"></div>
-      <div id="story-progress">
-        Story <span id="current-story">1</span> / <span id="total-stories">13</span>
+
+    <!-- Settings Modal -->
+    <div class="modal hidden" id="settings-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>⚙️ Settings</h2>
+          <button class="close-btn" id="close-settings" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <label class="setting-label">Reading Speed</label>
+            <div class="speed-options">
+              <button class="speed-option" data-speed="0.3">🐢 Slow</button>
+              <button class="speed-option active" data-speed="0.6">🚶 Normal</button>
+              <button class="speed-option" data-speed="0.9">🏃 Fast</button>
+              <button class="speed-option" data-speed="1.2">🚀 Turbo</button>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label">Text Size</label>
+            <div class="size-slider">
+              <span>A</span>
+              <input type="range" id="text-size" min="1" max="2" step="0.1" value="1.5">
+              <span class="large">A</span>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label">Theme</label>
+            <div class="theme-options">
+              <button class="theme-option active" data-theme="light">☀️ Light</button>
+              <button class="theme-option" data-theme="dark">🌙 Dark</button>
+              <button class="theme-option" data-theme="sepia">📜 Sepia</button>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label">Voice</label>
+            <select id="settings-voice-select" class="fancy-select"></select>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label">
+              <input type="checkbox" id="auto-advance" checked>
+              Auto-advance to next story
+            </label>
+          </div>
+          <div class="setting-group">
+            <label class="setting-label">
+              <input type="checkbox" id="word-hints" checked>
+              Show word hints on tap
+            </label>
+          </div>
+          <button class="btn-primary" id="reset-progress">Reset All Progress</button>
+        </div>
       </div>
     </div>
-    <div id="book">
-      <div id="page"></div>
+
+    <!-- Achievements Modal -->
+    <div class="modal hidden" id="achievements-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>🏆 Achievements</h2>
+          <button class="close-btn" id="close-achievements" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="achievements-grid" id="achievements-grid"></div>
+        </div>
+      </div>
     </div>
-    <div id="controls">
-      <select id="book-select" aria-label="Choose book"></select>
-      <button id="map-btn" aria-label="Choose a story" data-tooltip="Story Map">📚</button>
-      <button id="prev-btn" disabled data-tooltip="Previous Story">Back ⬅️</button>
-      <button id="play-btn" aria-label="Play narration" data-tooltip="Play">▶️</button>
-      <button id="pause-btn" aria-label="Pause narration" disabled data-tooltip="Pause">⏸️</button>
-      <button id="resume-btn" aria-label="Resume narration" disabled data-tooltip="Resume">Resume ▶️</button>
-      <button id="stop-btn" aria-label="Stop narration" disabled data-tooltip="Stop">⏹️</button>
-      <button id="next-btn" disabled data-tooltip="Next Story">Next ➡️</button>
-      <button id="speed-btn" aria-label="Adjust reading speed" data-tooltip="Speed">🐢</button>
-      <button id="star-btn" disabled data-tooltip="Earn Star">Star ⭐</button>
-      <button id="mic-btn" aria-label="Start reading" data-tooltip="Read Aloud">🎤</button>
-      <button id="mic-stop-btn" aria-label="Stop reading" disabled data-tooltip="Stop Reading">⏹🎤</button>
-      <select id="voice-select" aria-label="Choose voice"></select>
-      <button id="dark-mode-btn" aria-label="Toggle dark mode" data-tooltip="Dark Mode">🌙</button>
-      <button id="fullscreen-btn" aria-label="Toggle full screen" data-tooltip="Fullscreen">🖥️</button>
+
+    <!-- Help Modal -->
+    <div class="modal hidden" id="help-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>❓ How to Use</h2>
+          <button class="close-btn" id="close-help" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="help-section">
+            <h3>🎧 Listen to Stories</h3>
+            <p>Press the <strong>Play</strong> button to hear the story read aloud. Words will highlight as they're spoken!</p>
+          </div>
+          <div class="help-section">
+            <h3>🎤 Practice Reading</h3>
+            <p>Press the <strong>Read</strong> button and read the story out loud. Green words mean you got it right!</p>
+          </div>
+          <div class="help-section">
+            <h3>⭐ Earn Stars</h3>
+            <p>Complete a story and press <strong>Earn Star</strong> to collect stars and unlock new stories!</p>
+          </div>
+          <div class="help-section">
+            <h3>🗺️ Story Map</h3>
+            <p>Press <strong>Stories</strong> to see all available stories. Locked ones need more stars to unlock!</p>
+          </div>
+          <div class="help-section">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <ul>
+              <li><kbd>←</kbd> <kbd>→</kbd> Navigate stories</li>
+              <li><kbd>Space</kbd> Play/Pause</li>
+              <li><kbd>M</kbd> Open story map</li>
+              <li><kbd>F</kbd> Fullscreen</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="star-counter">
-      Stars: <span id="star-count">0</span>
-      <div id="star-icons"></div> <!-- Added for visual stars -->
+
+    <!-- Word Hint Tooltip -->
+    <div class="word-hint hidden" id="word-hint">
+      <div class="hint-word" id="hint-word"></div>
+      <div class="hint-phonics" id="hint-phonics"></div>
+      <button class="hint-speak" id="hint-speak">🔊 Listen</button>
     </div>
-    <div id="feedback" aria-live="polite"></div>
-    <div id="seek-container">
-      <input type="range" id="seek-range" min="0" max="100" value="0" aria-label="Seek narration progress">
-    </div>
-    <div id="story-map" class="hidden">
-      <button id="close-map" aria-label="Close story list">✖️</button>
-      <div id="story-grid" role="list"></div>
+
+    <!-- Achievement Toast -->
+    <div class="achievement-toast hidden" id="achievement-toast">
+      <div class="toast-icon">🏆</div>
+      <div class="toast-content">
+        <div class="toast-title" id="toast-title">Achievement Unlocked!</div>
+        <div class="toast-message" id="toast-message"></div>
+      </div>
     </div>
   </div>
-  <button id="top-btn" aria-label="Back to top">⬆️</button>
+
+  <button id="top-btn" class="top-btn" aria-label="Back to top">⬆️</button>
+
   <noscript>
-    Oops! This app needs JavaScript enabled to run.
+    <div class="noscript-message">
+      <h1>JavaScript Required</h1>
+      <p>PhonicsWorld needs JavaScript to run. Please enable it in your browser settings.</p>
+    </div>
   </noscript>
+
   <script src="script.js"></script>
 </body>
 </html>

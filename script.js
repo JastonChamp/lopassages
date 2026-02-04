@@ -1,286 +1,334 @@
+/**
+ * PhonicsWorld - World-Class Reading App
+ * A comprehensive phonics learning application for children
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
-  const VERSION = '1.0'; // For caching
-  let categories = {},
-      passages = [],
-      currentBook = 'book1',
-      currentIndex = 0,
-      wordRanges = [],
-      stars = 0,
-      currentSpeed = 0.6,
-      charPos = 0,
-      isPlaying = false,
-      isPaused = false,
-      recognition = null,
-      accuracyScore = 0,
-      micPermissionGranted = false;
-  const speedBtn = document.getElementById('speed-btn'),
-        playBtn = document.getElementById('play-btn'),
-        pauseBtn = document.getElementById('pause-btn'),
-        resumeBtn = document.getElementById('resume-btn'),
-        stopBtn = document.getElementById('stop-btn'),
-        mapBtn = document.getElementById('map-btn'),
-        closeMapBtn = document.getElementById('close-map'),
-        storyMap = document.getElementById('story-map'),
-        storyGrid = document.getElementById('story-grid'),
-        micBtn = document.getElementById('mic-btn'),
-        micStopBtn = document.getElementById('mic-stop-btn'),
-        voiceSelect = document.getElementById('voice-select'),
-        feedbackDiv = document.getElementById('feedback'),
-        readProgressBar = document.getElementById('read-progress-bar'),
-        seekRange = document.getElementById('seek-range'),
-        bookSelect = document.getElementById('book-select'),
-        darkModeBtn = document.getElementById('dark-mode-btn'),
-        fullscreenBtn = document.getElementById('fullscreen-btn'),
-        starCount = document.getElementById('star-count'),
-        starIcons = document.getElementById('star-icons'),
-        topBtn = document.getElementById('top-btn');
-   // Speeds and labels
-  const speeds = [0.3, 0.6, 0.9, 1.2];
-  const labels = ['🐢', '🚶', '🏃', '🚀'];
-  speedBtn && (speedBtn.textContent = labels[speeds.indexOf(currentSpeed)]);
-  // Voice selection
-  let availableVoices = [];
-  function populateVoices() {
-    availableVoices = speechSynthesis.getVoices();
-    if (!voiceSelect) return;
-    voiceSelect.innerHTML = '';
-    availableVoices.forEach((v, i) => {
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = v.name;
-      voiceSelect.appendChild(opt);
-    });
-    const saved = localStorage.getItem('voiceIndex');
-    if (saved && voiceSelect.options[saved]) voiceSelect.value = saved;
-  }
-  populateVoices();
-  if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
-  voiceSelect?.addEventListener('change', () => localStorage.setItem('voiceIndex', voiceSelect.value));
-  // Placeholder story
-  const placeholderStory = {
-    title: "Coming Soon!",
-    text: "More adventures are on the way! Check back later. 🎉",
-    image: "placeholder.png"
+  // ===== Constants =====
+  const VERSION = '2.0';
+  const SPEEDS = [0.3, 0.6, 0.9, 1.2];
+  const SPEED_LABELS = ['🐢', '🚶', '🏃', '🚀'];
+  const SPEED_NAMES = ['Slow', 'Normal', 'Fast', 'Turbo'];
+
+  // Placeholder image SVG
+  const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 350 200'%3E%3Crect fill='%23E8E8E8' width='350' height='200' rx='10'/%3E%3Ctext x='175' y='100' font-size='16' text-anchor='middle' fill='%23999'%3EImage Coming Soon%3C/text%3E%3Ctext x='175' y='125' font-size='40' text-anchor='middle'%3E📚%3C/text%3E%3C/svg%3E";
+
+  // Achievements definitions
+  const ACHIEVEMENTS = [
+    { id: 'first_story', name: 'First Steps', desc: 'Read your first story', icon: '📖', condition: (s) => s.storiesRead >= 1 },
+    { id: 'five_stories', name: 'Bookworm', desc: 'Read 5 stories', icon: '🐛', condition: (s) => s.storiesRead >= 5 },
+    { id: 'ten_stories', name: 'Story Master', desc: 'Read 10 stories', icon: '📚', condition: (s) => s.storiesRead >= 10 },
+    { id: 'first_star', name: 'Rising Star', desc: 'Earn your first star', icon: '⭐', condition: (s) => s.stars >= 1 },
+    { id: 'five_stars', name: 'Star Collector', desc: 'Earn 5 stars', icon: '🌟', condition: (s) => s.stars >= 5 },
+    { id: 'ten_stars', name: 'Superstar', desc: 'Earn 10 stars', icon: '💫', condition: (s) => s.stars >= 10 },
+    { id: 'perfect_read', name: 'Perfect Reader', desc: 'Get 100% accuracy', icon: '🎯', condition: (s) => s.perfectReads >= 1 },
+    { id: 'streak_3', name: 'On a Roll', desc: '3 day reading streak', icon: '🔥', condition: (s) => s.streak >= 3 },
+    { id: 'streak_7', name: 'Week Warrior', desc: '7 day reading streak', icon: '🏆', condition: (s) => s.streak >= 7 },
+    { id: 'speed_demon', name: 'Speed Reader', desc: 'Use turbo speed', icon: '🚀', condition: (s) => s.usedTurbo },
+    { id: 'night_owl', name: 'Night Owl', desc: 'Read in dark mode', icon: '🦉', condition: (s) => s.usedDarkMode },
+    { id: 'mic_master', name: 'Voice Star', desc: 'Practice reading aloud', icon: '🎤', condition: (s) => s.usedMic }
+  ];
+
+  // ===== State =====
+  let state = {
+    categories: {},
+    passages: [],
+    currentBook: 'book1',
+    currentIndex: 0,
+    wordRanges: [],
+    stars: 0,
+    currentSpeed: 0.6,
+    charPos: 0,
+    isPlaying: false,
+    isPaused: false,
+    recognition: null,
+    accuracyScore: 0,
+    micPermissionGranted: false,
+    storiesRead: 0,
+    totalReadingTime: 0,
+    streak: 0,
+    lastReadDate: null,
+    perfectReads: 0,
+    usedTurbo: false,
+    usedDarkMode: false,
+    usedMic: false,
+    unlockedAchievements: [],
+    settings: {
+      autoAdvance: true,
+      wordHints: true,
+      textSize: 1.5,
+      theme: 'light'
+    }
   };
-  // Inline SVG for offline support (no external CDN dependency)
-  const placeholderImageSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'%3E%3Crect fill='%23E0E0E0' width='120' height='80' rx='5'/%3E%3Ctext x='60' y='45' font-size='12' text-anchor='middle' fill='%23666'%3ENo Image%3C/text%3E%3C/svg%3E";
-  // Safe confetti wrapper for graceful degradation
+
+  // ===== DOM Elements =====
+  const $ = (id) => document.getElementById(id);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  const elements = {
+    // Stats
+    starCount: $('star-count'),
+    storiesRead: $('stories-read'),
+    accuracyStat: $('accuracy-stat'),
+    timeSpent: $('time-spent'),
+    streakCount: $('streak-count'),
+
+    // Controls
+    bookSelect: $('book-select'),
+    voiceSelect: $('voice-select'),
+    settingsVoiceSelect: $('settings-voice-select'),
+    playBtn: $('play-btn'),
+    pauseBtn: $('pause-btn'),
+    resumeBtn: $('resume-btn'),
+    stopBtn: $('stop-btn'),
+    prevBtn: $('prev-btn'),
+    nextBtn: $('next-btn'),
+    mapBtn: $('map-btn'),
+    speedBtn: $('speed-btn'),
+    starBtn: $('star-btn'),
+    micBtn: $('mic-btn'),
+    micStopBtn: $('mic-stop-btn'),
+    fullscreenBtn: $('fullscreen-btn'),
+    darkModeBtn: $('dark-mode-btn'),
+    helpBtn: $('help-btn'),
+    settingsBtn: $('settings-btn'),
+    achievementsBtn: $('achievements-btn'),
+    topBtn: $('top-btn'),
+
+    // Content
+    book: $('book'),
+    page: $('page'),
+    feedback: $('feedback'),
+    progressBar: $('progress-bar'),
+    readProgressBar: $('read-progress-bar'),
+    seekRange: $('seek-range'),
+    currentStory: $('current-story'),
+    totalStories: $('total-stories'),
+
+    // Modals
+    storyMap: $('story-map'),
+    storyGrid: $('story-grid'),
+    closeMap: $('close-map'),
+    settingsModal: $('settings-modal'),
+    closeSettings: $('close-settings'),
+    achievementsModal: $('achievements-modal'),
+    closeAchievements: $('close-achievements'),
+    achievementsGrid: $('achievements-grid'),
+    helpModal: $('help-modal'),
+    closeHelp: $('close-help'),
+
+    // Word hint
+    wordHint: $('word-hint'),
+    hintWord: $('hint-word'),
+    hintPhonics: $('hint-phonics'),
+    hintSpeak: $('hint-speak'),
+
+    // Achievement toast
+    achievementToast: $('achievement-toast'),
+    toastTitle: $('toast-title'),
+    toastMessage: $('toast-message'),
+
+    // Settings controls
+    textSize: $('text-size'),
+    autoAdvance: $('auto-advance'),
+    wordHintsCheckbox: $('word-hints'),
+    resetProgress: $('reset-progress')
+  };
+
+  // ===== Utility Functions =====
   const safeConfetti = (options) => {
     if (typeof confetti === 'function') {
       try { confetti(options); } catch (e) { console.warn('Confetti error:', e); }
     }
   };
-  // Enhanced loadData with full timeout via Promise.race
-  async function loadData() {
+
+  const setFeedback = (msg, type = '') => {
+    if (!elements.feedback) return;
+    elements.feedback.textContent = msg;
+    elements.feedback.className = 'feedback-area';
+    if (type) elements.feedback.classList.add(type);
+    if (msg) setTimeout(() => setFeedback(''), 5000);
+  };
+
+  const formatTime = (minutes) => {
+    if (minutes < 60) return `${Math.round(minutes)}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
+  };
+
+  const cleanForTTS = (text) => {
+    return text.replace(/<[^>]+>/g, '')
+               .replace(/([.!?])/g, '$1 ')
+               .replace(/\s+/g, ' ')
+               .trim();
+  };
+
+  const stripHtml = (html) => html.replace(/<[^>]+>/g, '');
+
+  // ===== Storage Functions =====
+  const saveState = () => {
+    const saveData = {
+      stars: state.stars,
+      currentBook: state.currentBook,
+      currentIndex: state.currentIndex,
+      currentSpeed: state.currentSpeed,
+      storiesRead: state.storiesRead,
+      totalReadingTime: state.totalReadingTime,
+      streak: state.streak,
+      lastReadDate: state.lastReadDate,
+      perfectReads: state.perfectReads,
+      usedTurbo: state.usedTurbo,
+      usedDarkMode: state.usedDarkMode,
+      usedMic: state.usedMic,
+      unlockedAchievements: state.unlockedAchievements,
+      settings: state.settings
+    };
+    localStorage.setItem('phonicsworld_state', JSON.stringify(saveData));
+  };
+
+  const loadState = () => {
+    const saved = localStorage.getItem('phonicsworld_state');
+    if (saved) {
+      const data = JSON.parse(saved);
+      Object.assign(state, data);
+      updateStreak();
+    }
+  };
+
+  const updateStreak = () => {
+    const today = new Date().toDateString();
+    const lastRead = state.lastReadDate;
+
+    if (!lastRead) {
+      state.streak = 0;
+    } else if (lastRead === today) {
+      // Already read today, keep streak
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (lastRead === yesterday.toDateString()) {
+        // Read yesterday, streak continues
+      } else {
+        // Streak broken
+        state.streak = 0;
+      }
+    }
+  };
+
+  const markReadToday = () => {
+    const today = new Date().toDateString();
+    if (state.lastReadDate !== today) {
+      state.streak++;
+      state.lastReadDate = today;
+      saveState();
+      checkAchievements();
+    }
+  };
+
+  // ===== Voice Functions =====
+  let availableVoices = [];
+
+  const populateVoices = () => {
+    availableVoices = speechSynthesis.getVoices();
+    [elements.voiceSelect, elements.settingsVoiceSelect].forEach(select => {
+      if (!select) return;
+      select.innerHTML = '';
+      availableVoices.forEach((v, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = v.name.substring(0, 30);
+        select.appendChild(opt);
+      });
+      const saved = localStorage.getItem('voiceIndex');
+      if (saved && select.options[saved]) select.value = saved;
+    });
+  };
+
+  populateVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  // ===== Data Loading =====
+  const loadData = async () => {
     const cached = localStorage.getItem('passages');
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (parsed.version === VERSION) {
-        return parsed.data;
-      }
+      if (parsed.version === VERSION) return parsed.data;
     }
+
     const controller = new AbortController();
     const fetchPromise = fetch('passages.json', { cache: 'no-store', signal: controller.signal })
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+        return res.json();
       })
       .then(data => {
         localStorage.setItem('passages', JSON.stringify({ version: VERSION, data }));
         return data;
       });
+
     return Promise.race([
       fetchPromise,
       new Promise((_, reject) => setTimeout(() => {
         controller.abort();
-        reject(new Error('Load timeout after 10s'));
+        reject(new Error('Load timeout'));
       }, 10000))
     ]);
-  }
-  // Load with error handling (no overlay)
-  loadData().then(data => {
-    categories = data || {};
-    Object.keys(categories).forEach(key => {
-      if (!categories[key]?.length) categories[key] = [placeholderStory];
-    });
-    if (bookSelect) {
-      bookSelect.innerHTML = '';
-      Object.keys(categories).forEach(key => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = key.replace('book', 'Book ');
-        bookSelect.appendChild(opt);
-      });
-      bookSelect.value = currentBook;
+  };
+
+  // ===== UI Update Functions =====
+  const updateStats = () => {
+    if (elements.starCount) elements.starCount.textContent = state.stars;
+    if (elements.storiesRead) elements.storiesRead.textContent = state.storiesRead;
+    if (elements.accuracyStat) elements.accuracyStat.textContent = `${Math.round(state.accuracyScore)}%`;
+    if (elements.timeSpent) elements.timeSpent.textContent = formatTime(state.totalReadingTime);
+    if (elements.streakCount) elements.streakCount.textContent = state.streak;
+  };
+
+  const updateProgress = () => {
+    const progress = ((state.currentIndex + 1) / state.passages.length) * 100;
+    if (elements.progressBar) {
+      elements.progressBar.style.width = `${progress}%`;
     }
-    loadBook();
-  }).catch(err => {
-    console.error('Load error:', err);
-    let msg = 'Error loading stories. Using cached or placeholder data.';
-    if (err.message === 'Load timeout after 10s' || err.name === 'AbortError') {
-      msg = 'Loading timed out. Check your connection and refresh.';
-    } else if (err.message.startsWith('HTTP error')) {
-      msg = 'Server error loading stories.';
-    } else if (err.message === 'Failed to fetch') {
-      msg = 'Network error. Are you offline?';
+    if (elements.currentStory) elements.currentStory.textContent = state.currentIndex + 1;
+    if (elements.totalStories) elements.totalStories.textContent = state.passages.length;
+  };
+
+  const updateNavButtons = () => {
+    if (elements.prevBtn) elements.prevBtn.disabled = state.currentIndex === 0;
+    if (elements.nextBtn) elements.nextBtn.disabled = state.currentIndex === state.passages.length - 1;
+    if (elements.starBtn) elements.starBtn.disabled = state.currentIndex === 0 || state.stars >= state.passages.length;
+  };
+
+  const updateControlButtons = () => {
+    if (elements.playBtn) elements.playBtn.disabled = state.isPlaying || state.isPaused;
+    if (elements.pauseBtn) elements.pauseBtn.disabled = !state.isPlaying;
+    if (elements.resumeBtn) {
+      elements.resumeBtn.disabled = !state.isPaused;
+      elements.resumeBtn.style.display = state.isPaused ? 'flex' : 'none';
     }
-    setFeedback(msg, 'error');
-    // Fallback to any cached data (even outdated) or placeholder
-    const cached = localStorage.getItem('passages');
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      categories = parsed.data;
-    } else {
-      categories = { book1: [placeholderStory] };
+    if (elements.stopBtn) elements.stopBtn.disabled = !(state.isPlaying || state.isPaused);
+  };
+
+  const updateReadProgress = (progress) => {
+    const safeProgress = isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress));
+    if (elements.readProgressBar) {
+      elements.readProgressBar.style.width = `${safeProgress * 100}%`;
     }
-    if (bookSelect) {
-      bookSelect.innerHTML = '';
-      Object.keys(categories).forEach(key => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = key.replace('book', 'Book ');
-        bookSelect.appendChild(opt);
-      });
-      bookSelect.value = currentBook;
+    if (elements.seekRange) elements.seekRange.value = safeProgress * 100;
+  };
+
+  const updateSpeedButton = () => {
+    const idx = SPEEDS.indexOf(state.currentSpeed);
+    if (elements.speedBtn) {
+      elements.speedBtn.querySelector('.btn-icon').textContent = SPEED_LABELS[idx];
     }
-    loadBook();
-  });
-  function loadBook() {
-    passages = categories[currentBook] || [];
-    if (document.getElementById('total-stories')) document.getElementById('total-stories').textContent = passages.length;
-    document.documentElement.style.setProperty('--total', passages.length);
-    buildStoryMap();
-    showPassage(0);
-    updateNavButtons();
-  }
-  // Dark mode
-  darkModeBtn?.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
-  // Full-screen
-  fullscreenBtn?.addEventListener('click', () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => console.error('Fullscreen error:', err));
-    } else {
-      document.exitFullscreen();
-    }
-  });
-  // Button feedback
-  document.querySelectorAll('button').forEach(btn => {
-    btn?.addEventListener('click', () => {
-      btn.style.transform = 'scale(1.1)';
-      setTimeout(() => btn.style.transform = 'scale(1)', 200);
-    });
-  });
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn')?.disabled) flipTo(currentIndex - 1, 'prev');
-    if (e.key === 'ArrowRight' && !document.getElementById('next-btn')?.disabled) flipTo(currentIndex + 1, 'next');
-    if (e.key === 'Enter' && document.activeElement?.classList.contains('story-card')) document.activeElement.click();
-  });
-  // Unlock logic
-  function isBookUnlocked(book) {
-    if (book === 'book1') return true;
-    if (book === 'book2' && stars >= 5) return true;
-    return false;
-  }
-  bookSelect?.addEventListener('change', () => {
-    const selectedBook = bookSelect.value;
-    if (!isBookUnlocked(selectedBook)) {
-      alert('Complete more stories in previous books to unlock!');
-      bookSelect.value = currentBook; // Revert to previous book
-      return;
-    }
-    currentBook = selectedBook;
-    loadBook();
-  });
-  // Show passage
-  function showPassage(i, container = document.getElementById('page')) {
-    currentIndex = i;
-    const p = passages[i];
-    if (!p || !container) return;
-    wordRanges = [];
-    const imgPath = p.image ? `images/${p.image}` : placeholderImageSvg;
-    const altText = p.image ? `Illustration for ${p.title.replace(/<[^>]+>/g, '')}` : 'Placeholder image';
-    const imgTag = `<img id="passage-image" loading="lazy" src="${imgPath}" alt="${altText}">`;
-    const formattedText = formatText(p.text);
-    container.innerHTML = `
-      <h1 id="passage-title">${p.title}</h1>
-      <p id="passage-info">Story <span>${i + 1}</span> / ${passages.length}</p>
-      <div id="passage-text" role="region" aria-live="polite">${formattedText}</div>
-      ${imgTag}
-    `;
-    const textDiv = container.querySelector('#passage-text');
-    if (textDiv) {
-      wrapWords(textDiv);
-      buildRanges(textDiv);
-    }
-    if (document.getElementById('current-story')) document.getElementById('current-story').textContent = i + 1;
-    document.documentElement.style.setProperty('--current', i + 1);
-    updateNavButtons();
-    updateControlButtons();
-    updateReadProgress(0);
-    charPos = 0;
-    // Preload next/prev images with error handling
-    const preloadImage = (src) => {
-      if (!src) return;
-      const img = new Image();
-      img.onerror = () => console.warn(`Failed to preload: ${src}`);
-      img.src = `images/${src}`;
-    };
-    if (i > 0 && passages[i-1]?.image) preloadImage(passages[i-1].image);
-    if (i < passages.length - 1 && passages[i+1]?.image) preloadImage(passages[i+1].image);
-  }
-  // Clean text for TTS
-  function cleanForTTS(text) {
-    return text.replace(/\./g, ' ')
-               .replace(/([.!?])/g, '$1 ')
-               .replace(/\s+/g, ' ')
-               .trim();
-  }
-  // Wrap words, separate punctuation
-  function wrapWords(container) {
-    if (!container) return;
-    Array.from(container.childNodes).forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const parts = node.textContent.split(/(\s+|[.,!?;:"'()])/);
-        const frag = document.createDocumentFragment();
-        parts.forEach(tok => {
-          if (/^\s+$/.test(tok) || /[.,!?;:"'()]/.test(tok)) {
-            frag.append(tok);
-          } else {
-            const span = document.createElement('span');
-            span.className = 'word';
-            span.textContent = tok;
-            frag.append(span);
-          }
-        });
-        container.replaceChild(frag, node);
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        wrapWords(node);
-      }
-    });
-  }
-  // Build ranges
-  function traverse(node, cumulative) {
-    if (node.nodeType === Node.TEXT_NODE) return cumulative + node.textContent.length;
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      if (node.classList.contains('word')) {
-        const len = node.textContent.length;
-        wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
-        cumulative += len;
-      } else {
-        Array.from(node.childNodes).forEach(child => {
-          cumulative = traverse(child, cumulative);
-        });
-      }
-    }
-    return cumulative;
-  }
-  function buildRanges(div) {
-    wordRanges = [];
-    if (div) traverse(div, 0);
-  }
-  // Format text
-  function formatText(text) {
+  };
+
+  // ===== Story Display =====
+  const formatText = (text) => {
     if (!text) return '';
     const sentences = text.split(/(?<=[.!?])\s+/);
     const paragraphs = [];
@@ -293,295 +341,405 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     return paragraphs.map(p => `<p>${p}</p>`).join('');
-  }
-  // Nav buttons
-  function updateNavButtons() {
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const starBtn = document.getElementById('star-btn');
-    if (prevBtn) prevBtn.disabled = currentIndex === 0;
-    if (nextBtn) nextBtn.disabled = currentIndex === passages.length - 1;
-    if (starBtn) starBtn.disabled = currentIndex === 0 || stars >= passages.length;
-  }
-  function updateControlButtons() {
-    if (playBtn) playBtn.disabled = isPlaying || isPaused;
-    if (pauseBtn) pauseBtn.disabled = !isPlaying;
-    if (resumeBtn) resumeBtn.disabled = !isPaused;
-    if (stopBtn) stopBtn.disabled = !(isPlaying || isPaused);
-    if (resumeBtn) resumeBtn.style.display = isPaused ? 'inline-block' : 'none';
-  }
-  function updateReadProgress(progress) {
-    const safeProgress = isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress));
-    if (readProgressBar) readProgressBar.style.width = (safeProgress * 100) + '%';
-    if (seekRange) seekRange.value = safeProgress * 100;
-  }
-  // Story map
-  function buildStoryMap() {
-    if (!storyGrid) return;
-    storyGrid.innerHTML = '';
-    passages.forEach((p, idx) => {
+  };
+
+  const wrapWords = (container) => {
+    if (!container) return;
+    Array.from(container.childNodes).forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const parts = node.textContent.split(/(\s+|[.,!?;:"'()])/);
+        const frag = document.createDocumentFragment();
+        parts.forEach(tok => {
+          if (/^\s+$/.test(tok) || /^[.,!?;:"'()]$/.test(tok)) {
+            frag.append(tok);
+          } else if (tok.trim()) {
+            const span = document.createElement('span');
+            span.className = 'word';
+            span.textContent = tok;
+            span.dataset.word = tok.toLowerCase();
+            frag.append(span);
+          }
+        });
+        container.replaceChild(frag, node);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        wrapWords(node);
+      }
+    });
+  };
+
+  const buildRanges = (div) => {
+    state.wordRanges = [];
+    if (!div) return;
+
+    const traverse = (node, cumulative) => {
+      if (node.nodeType === Node.TEXT_NODE) return cumulative + node.textContent.length;
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.classList.contains('word')) {
+          const len = node.textContent.length;
+          state.wordRanges.push({ span: node, start: cumulative, end: cumulative + len - 1 });
+          cumulative += len;
+        } else {
+          Array.from(node.childNodes).forEach(child => {
+            cumulative = traverse(child, cumulative);
+          });
+        }
+      }
+      return cumulative;
+    };
+
+    traverse(div, 0);
+  };
+
+  const showPassage = (index, container = elements.page) => {
+    state.currentIndex = index;
+    const passage = state.passages[index];
+    if (!passage || !container) return;
+
+    state.wordRanges = [];
+    const imgPath = passage.image ? `images/${passage.image}` : PLACEHOLDER_IMAGE;
+    const altText = passage.image ? `Illustration for ${stripHtml(passage.title)}` : 'Story illustration';
+    const formattedText = formatText(passage.text);
+
+    container.innerHTML = `
+      <h1 class="passage-title">${passage.title}</h1>
+      <div class="passage-info">
+        <span class="passage-info-badge">Story ${index + 1} of ${state.passages.length}</span>
+        ${index < state.stars ? '<span class="passage-info-badge" style="background: var(--success-light); color: var(--success);">✓ Completed</span>' : ''}
+      </div>
+      <div class="passage-text" role="region" aria-live="polite">${formattedText}</div>
+      <img class="passage-image" src="${imgPath}" alt="${altText}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMAGE}'">
+    `;
+
+    const textDiv = container.querySelector('.passage-text');
+    if (textDiv) {
+      wrapWords(textDiv);
+      buildRanges(textDiv);
+      setupWordHints(textDiv);
+    }
+
+    updateProgress();
+    updateNavButtons();
+    updateControlButtons();
+    updateReadProgress(0);
+    state.charPos = 0;
+
+    // Preload adjacent images
+    const preloadImage = (src) => {
+      if (!src) return;
+      const img = new Image();
+      img.onerror = () => {};
+      img.src = `images/${src}`;
+    };
+    if (index > 0 && state.passages[index - 1]?.image) preloadImage(state.passages[index - 1].image);
+    if (index < state.passages.length - 1 && state.passages[index + 1]?.image) preloadImage(state.passages[index + 1].image);
+  };
+
+  // ===== Story Map =====
+  const buildStoryMap = () => {
+    if (!elements.storyGrid) return;
+    elements.storyGrid.innerHTML = '';
+
+    state.passages.forEach((p, idx) => {
       const card = document.createElement('div');
       card.className = 'story-card';
-      card.tabIndex = 0; // Keyboard focus
+      card.tabIndex = 0;
       card.role = 'listitem';
-      if (idx > stars) card.classList.add('locked');
-      const imgPath = p.image ? `images/${p.image}` : placeholderImageSvg;
-      card.innerHTML = `<img loading="lazy" src="${imgPath}" alt="${p.title.replace(/<[^>]+>/g, '')} illustration"><div class="story-title">${p.title}</div>`;
+
+      if (idx > state.stars) card.classList.add('locked');
+      if (idx === state.currentIndex) card.classList.add('current');
+      if (idx < state.stars) card.classList.add('completed');
+
+      const imgPath = p.image ? `images/${p.image}` : PLACEHOLDER_IMAGE;
+      const status = idx > state.stars ? '🔒 Locked' : idx < state.stars ? '✓ Completed' : 'Current';
+
+      card.innerHTML = `
+        <img class="story-card-image" src="${imgPath}" alt="${stripHtml(p.title)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMAGE}'">
+        <div class="story-card-content">
+          <div class="story-card-title">${stripHtml(p.title)}</div>
+          <div class="story-card-status">${status}</div>
+        </div>
+      `;
+
       card.addEventListener('click', () => {
-        if (idx <= stars) {
-          storyMap.classList.add('hidden');
-          flipTo(idx, idx > currentIndex ? 'next' : 'prev');
+        if (idx <= state.stars) {
+          elements.storyMap.classList.add('hidden');
+          flipTo(idx, idx > state.currentIndex ? 'next' : 'prev');
         } else {
-          alert('Earn more stars to unlock!');
+          setFeedback('Earn more stars to unlock this story!', 'info');
         }
       });
-      storyGrid.appendChild(card);
+
+      elements.storyGrid.appendChild(card);
     });
-  }
-  // Flip to
-  function flipTo(idx, dir) {
-    if (idx < 0 || idx >= passages.length) return;
+  };
+
+  // ===== Page Transitions =====
+  const flipTo = (idx, dir) => {
+    if (idx < 0 || idx >= state.passages.length) return;
     narrator.stop(true);
-    const oldPg = document.getElementById('page');
-    if (!oldPg) return;
-    oldPg.innerHTML = '<div class="loader"></div>';
+
+    const oldPage = elements.page;
+    if (!oldPage) return;
+
+    oldPage.style.opacity = '0';
+    oldPage.style.transform = dir === 'next' ? 'translateX(-50px)' : 'translateX(50px)';
+
     setTimeout(() => {
-      const newPg = oldPg.cloneNode(false);
-      newPg.id = 'page';
-      newPg.classList.add(dir === 'next' ? 'slide-right' : 'slide-left');
-      showPassage(idx, newPg);
-      if (document.getElementById('book')) document.getElementById('book').appendChild(newPg);
-      requestAnimationFrame(() => {
-        oldPg.classList.add(dir === 'next' ? 'slide-left' : 'slide-right');
-        newPg.classList.remove(dir === 'next' ? 'slide-right' : 'slide-left');
-      });
-      setTimeout(() => oldPg.remove(), 500);
+      showPassage(idx);
+      elements.page.style.opacity = '1';
+      elements.page.style.transform = 'translateX(0)';
     }, 300);
-  }
-  // Star earning with confetti
-  document.getElementById('star-btn')?.addEventListener('click', () => {
-    if (currentIndex > 0 && stars < passages.length) {
-      stars++;
-      updateStars();
-      safeConfetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      updateNavButtons();
-      buildStoryMap();
+  };
+
+  // ===== Book Loading =====
+  const loadBook = () => {
+    state.passages = state.categories[state.currentBook] || [];
+    if (state.passages.length === 0) {
+      state.passages = [{ title: 'Coming Soon!', text: 'More adventures are on the way!', image: null }];
     }
-  });
-  function updateStars() {
-    if (starCount) starCount.textContent = stars;
-    if (starIcons) {
-      starIcons.innerHTML = '';
-      for (let i = 0; i < passages.length; i++) {
-        const star = document.createElement('span');
-        star.textContent = i < stars ? '⭐' : '☆';
-        starIcons.appendChild(star);
-      }
-    }
-  }
-  // Speed adjust
-  function adjustSpeed() {
-    const idx = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
-    currentSpeed = speeds[idx];
-    if (speedBtn) speedBtn.textContent = labels[idx];
-  }
-  // Narrator class
+    buildStoryMap();
+    showPassage(0);
+    updateNavButtons();
+    updateStats();
+  };
+
+  const isBookUnlocked = (book) => {
+    if (book === 'book1') return true;
+    if (book === 'book2' && state.stars >= 5) return true;
+    return false;
+  };
+
+  // ===== Narrator Class =====
   class Narrator {
     constructor() {
       this.utter = null;
-      this.currentSpeakingSpan = null;
-      this.highlightTimer = null;
+      this.currentSpan = null;
+      this.timer = null;
+      this.startTime = null;
     }
-    start(start = 0) {
+
+    start(startPos = 0) {
       this.stop(false);
-      const textElem = document.getElementById('passage-text');
+      const textElem = document.querySelector('.passage-text');
       if (!textElem) {
-        setFeedback('Text element not found. Please reload.', 'error');
+        setFeedback('Cannot find text to read.', 'error');
         return;
       }
-      let text = textElem.textContent || '';
-      const speakText = cleanForTTS(text.slice(start));
+
+      const text = textElem.textContent || '';
+      const speakText = cleanForTTS(text.slice(startPos));
       if (!speakText) return;
+
       this.utter = new SpeechSynthesisUtterance(speakText);
-      this.utter.rate = currentSpeed;
-      if (voiceSelect && availableVoices.length) {
-        const voice = availableVoices[voiceSelect.value];
+      this.utter.rate = state.currentSpeed;
+
+      if (elements.voiceSelect && availableVoices.length) {
+        const voice = availableVoices[elements.voiceSelect.value];
         if (voice) this.utter.voice = voice;
       }
+
       this.utter.onboundary = (event) => {
         if (event.name === 'word') {
-          const globalIndex = start + event.charIndex;
-          charPos = globalIndex;
-          if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
-          const range = wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
+          const globalIndex = startPos + event.charIndex;
+          state.charPos = globalIndex;
+
+          if (this.currentSpan) this.currentSpan.classList.remove('speaking');
+          const range = state.wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
           if (range) {
             range.span.classList.add('speaking');
-            this.currentSpeakingSpan = range.span;
+            this.currentSpan = range.span;
           }
+
           updateReadProgress(globalIndex / (text.length || 1));
-          localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
         }
       };
+
       this.utter.onend = () => this.reset();
       this.utter.onerror = (e) => {
         console.error('Speech error:', e);
-        setFeedback('Narration error. Try a different voice or refresh.', 'error');
+        setFeedback('Narration error. Try a different voice.', 'error');
         this.reset();
       };
+
       try {
+        this.startTime = Date.now();
         speechSynthesis.speak(this.utter);
-        isPlaying = true;
-        isPaused = false;
+        state.isPlaying = true;
+        state.isPaused = false;
         updateControlButtons();
-        // Fallback timer for highlighting if boundary event fails
-        this.highlightTimer = setInterval(() => {
-          if (charPos < text.length) {
-            charPos += Math.floor(currentSpeed * 5); // Approximate characters per interval
-            const globalIndex = Math.min(charPos, text.length - 1);
-            const range = wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
+        markReadToday();
+
+        // Fallback timer for browsers that don't support boundary events
+        this.timer = setInterval(() => {
+          if (state.charPos < text.length) {
+            state.charPos += Math.floor(state.currentSpeed * 5);
+            const globalIndex = Math.min(state.charPos, text.length - 1);
+            const range = state.wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
             if (range) {
-              if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
+              if (this.currentSpan) this.currentSpan.classList.remove('speaking');
               range.span.classList.add('speaking');
-              this.currentSpeakingSpan = range.span;
+              this.currentSpan = range.span;
             }
             updateReadProgress(globalIndex / text.length);
           } else {
-            clearInterval(this.highlightTimer);
+            clearInterval(this.timer);
           }
-        }, 100); // Check every 100ms
+        }, 100);
       } catch (e) {
-        console.error('SpeechSynthesis error:', e);
-        setFeedback('Speech synthesis failed. Check browser settings.', 'error');
+        console.error('Speech synthesis error:', e);
+        setFeedback('Speech not available in this browser.', 'error');
       }
     }
+
     pause() {
-      if (!isPlaying) return;
+      if (!state.isPlaying) return;
       speechSynthesis.pause();
-      isPaused = true;
-      isPlaying = false;
-      clearInterval(this.highlightTimer);
+      state.isPaused = true;
+      state.isPlaying = false;
+      clearInterval(this.timer);
       updateControlButtons();
     }
+
     resume() {
-      if (!isPaused) return;
+      if (!state.isPaused) return;
       speechSynthesis.resume();
-      isPaused = false;
-      isPlaying = true;
+      state.isPaused = false;
+      state.isPlaying = true;
       updateControlButtons();
     }
+
     stop(clearSaved = true) {
       speechSynthesis.cancel();
-      clearInterval(this.highlightTimer);
-      if (this.currentSpeakingSpan) this.currentSpeakingSpan.classList.remove('speaking');
-      document.querySelectorAll('#passage-text .speaking').forEach(span => span.classList.remove('speaking'));
-      this.currentSpeakingSpan = null;
-      this.utter = null;
-      isPlaying = false;
-      isPaused = false;
-      if (clearSaved) {
-        charPos = 0;
-        localStorage.removeItem('progress');
-        updateReadProgress(0);
-        if (seekRange) seekRange.value = 0;
+      clearInterval(this.timer);
+
+      if (this.currentSpan) this.currentSpan.classList.remove('speaking');
+      document.querySelectorAll('.passage-text .speaking').forEach(s => s.classList.remove('speaking'));
+
+      // Track reading time
+      if (this.startTime) {
+        const elapsed = (Date.now() - this.startTime) / 60000;
+        state.totalReadingTime += elapsed;
+        saveState();
       }
+
+      this.currentSpan = null;
+      this.utter = null;
+      this.startTime = null;
+      state.isPlaying = false;
+      state.isPaused = false;
+
+      if (clearSaved) {
+        state.charPos = 0;
+        updateReadProgress(0);
+      }
+
       updateControlButtons();
     }
+
     reset() {
-      clearInterval(this.highlightTimer);
-      this.currentSpeakingSpan = null;
-      isPlaying = false;
-      isPaused = false;
-      charPos = 0;
+      clearInterval(this.timer);
+
+      if (this.startTime) {
+        const elapsed = (Date.now() - this.startTime) / 60000;
+        state.totalReadingTime += elapsed;
+        state.storiesRead++;
+        saveState();
+        updateStats();
+        checkAchievements();
+      }
+
+      this.currentSpan = null;
+      this.startTime = null;
+      state.isPlaying = false;
+      state.isPaused = false;
+      state.charPos = 0;
       updateControlButtons();
       updateReadProgress(1);
-      localStorage.removeItem('progress');
     }
   }
+
   const narrator = new Narrator();
-  // Voice capture setup with improvements
-  function initVoiceCapture() {
+
+  // ===== Speech Recognition =====
+  const initVoiceCapture = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList;
     if (!SpeechRecognition) {
-      console.warn('SpeechRecognition not supported');
-      setFeedback('Speech recognition not supported in this browser. Try Chrome.', 'error');
+      setFeedback('Speech recognition not supported. Try Chrome.', 'error');
       return;
     }
-    recognition = new SpeechRecognition();
-    recognition.lang = 'en-US'; // Tune to 'en-GB' or 'en-AU' if needed for better accent match
-    recognition.continuous = true; // Improved: Continuous for longer reading
-    recognition.interimResults = true; // Improved: Real-time feedback
-    recognition.maxAlternatives = 3; // Improved: Multiple guesses for better matching
-    // Improved: Grammar from story words for accuracy
-    const storyText = passages[currentIndex]?.text || '';
-    const words = [...new Set(storyText.toLowerCase().split(/\s+/).filter(w => w.length > 1))]; // Unique words >1 char
-    const grammar = `#JSGF V1.0; grammar story; public <word> = ${words.join(' | ')};`;
-    if (SpeechGrammarList) {
-      const speechRecognitionList = new SpeechGrammarList();
-      speechRecognitionList.addFromString(grammar, 1);
-      recognition.grammars = speechRecognitionList;
-    }
-    recognition.onresult = (event) => {
+
+    state.recognition = new SpeechRecognition();
+    state.recognition.lang = 'en-US';
+    state.recognition.continuous = true;
+    state.recognition.interimResults = true;
+    state.recognition.maxAlternatives = 3;
+
+    state.recognition.onresult = (event) => {
       const results = Array.from(event.results);
       let transcript = '';
       results.forEach(result => {
-        // Improved: Pick best alternative by checking against story text
-        let bestAlt = result[0].transcript;
-        for (let alt of result) {
-          if (storyText.toLowerCase().includes(alt.transcript.toLowerCase())) {
-            bestAlt = alt.transcript;
-            break;
-          }
-        }
-        transcript += bestAlt + ' ';
+        transcript += result[0].transcript + ' ';
       });
-      const trimmedTranscript = transcript.trim();
-      const storyTextCurrent = passages[currentIndex]?.text || '';
-      highlightReading(trimmedTranscript, storyTextCurrent);
+      const storyText = state.passages[state.currentIndex]?.text || '';
+      highlightReading(transcript.trim(), storyText);
     };
-    recognition.onstart = () => {
-      micBtn.disabled = true;
-      micStopBtn.disabled = false;
-      setFeedback('Listening... Speak clearly and slowly in a quiet room.', 'success');
-      highlightNextWord(0); // Start highlighting the first word
+
+    state.recognition.onstart = () => {
+      if (elements.micBtn) elements.micBtn.disabled = true;
+      if (elements.micStopBtn) elements.micStopBtn.disabled = false;
+      setFeedback('Listening... Read the story aloud!', 'info');
+      highlightNextWord(0);
+      state.usedMic = true;
+      saveState();
+      checkAchievements();
     };
-    recognition.onend = () => {
-      micBtn.disabled = false;
-      micStopBtn.disabled = true;
+
+    state.recognition.onend = () => {
+      if (elements.micBtn) elements.micBtn.disabled = false;
+      if (elements.micStopBtn) elements.micStopBtn.disabled = true;
     };
-    recognition.onerror = (event) => {
+
+    state.recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      setFeedback('Error: ' + event.error + '. Try again - speak louder or check mic permissions.', 'error');
+      setFeedback(`Microphone error: ${event.error}`, 'error');
     };
-    recognition.onnomatch = () => {
-      setFeedback('No match found. Try speaking slower or more clearly.', 'error');
-    };
-  }
-  function highlightNextWord(index) {
-    document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
-    const words = document.querySelectorAll('#passage-text .word');
+  };
+
+  const highlightNextWord = (index) => {
+    document.querySelectorAll('.passage-text .next-word').forEach(s => s.classList.remove('next-word'));
+    const words = document.querySelectorAll('.passage-text .word');
     if (words[index]) words[index].classList.add('next-word');
-  }
-  function similarity(s1, s2) {
-    s1 = s1.toLowerCase();
-    s2 = s2.toLowerCase();
-    if (s1.length !== s2.length) return 0;
+  };
+
+  const similarity = (s1, s2) => {
+    s1 = s1.toLowerCase().replace(/[^a-z]/g, '');
+    s2 = s2.toLowerCase().replace(/[^a-z]/g, '');
+    if (s1.length === 0 || s2.length === 0) return 0;
+    if (s1 === s2) return 100;
+
     let matches = 0;
-    for (let i = 0; i < s1.length; i++) if (s1[i] === s2[i]) matches++;
-    return (matches / s1.length) * 100;
-  }
-  function highlightReading(transcript, storyText) {
-    const expected = storyText.split(/\s+/);
-    const spoken = transcript.trim().split(/\s+/);
-    const wordSpans = document.querySelectorAll('#passage-text .word');
+    const minLen = Math.min(s1.length, s2.length);
+    for (let i = 0; i < minLen; i++) {
+      if (s1[i] === s2[i]) matches++;
+    }
+    return (matches / Math.max(s1.length, s2.length)) * 100;
+  };
+
+  const highlightReading = (transcript, storyText) => {
+    const expected = storyText.split(/\s+/).map(w => w.replace(/[^a-zA-Z]/g, '').toLowerCase()).filter(w => w);
+    const spoken = transcript.split(/\s+/).map(w => w.replace(/[^a-zA-Z]/g, '').toLowerCase()).filter(w => w);
+    const wordSpans = document.querySelectorAll('.passage-text .word');
+
     let correct = 0;
     let nextIndex = expected.length;
+
     expected.forEach((word, i) => {
       const span = wordSpans[i];
       if (!span) return;
       span.classList.remove('correct', 'incorrect');
+
       if (spoken[i]) {
-        if (spoken[i].toLowerCase() === word.toLowerCase() || similarity(spoken[i], word) > 80) {
+        if (spoken[i] === word || similarity(spoken[i], word) > 75) {
           span.classList.add('correct');
           correct++;
         } else {
@@ -592,74 +750,459 @@ document.addEventListener('DOMContentLoaded', () => {
         nextIndex = Math.min(nextIndex, i);
       }
     });
-    accuracyScore = (correct / expected.length) * 100;
-    setFeedback(`${transcript} | Score: ${accuracyScore.toFixed(0)}%`, accuracyScore > 80 ? 'success' : 'error');
+
+    state.accuracyScore = expected.length > 0 ? (correct / expected.length) * 100 : 0;
+    const scoreText = `Score: ${state.accuracyScore.toFixed(0)}%`;
+    setFeedback(scoreText, state.accuracyScore > 70 ? 'success' : 'error');
     updateReadProgress(correct / expected.length);
-    if (accuracyScore > 80) safeConfetti({ particleCount: 50, spread: 50 });
+    updateStats();
+
+    if (state.accuracyScore >= 100) {
+      state.perfectReads++;
+      saveState();
+      checkAchievements();
+    }
+
+    if (state.accuracyScore > 80) {
+      safeConfetti({ particleCount: 50, spread: 50 });
+    }
+
     highlightNextWord(nextIndex);
-  }
-  function startVoiceCapture() {
-    if (!micPermissionGranted) {
-      micPermissionGranted = confirm('Allow microphone access to practice reading aloud?');
-      if (!micPermissionGranted) return;
+  };
+
+  const startVoiceCapture = () => {
+    if (!state.micPermissionGranted) {
+      state.micPermissionGranted = confirm('Allow microphone to practice reading aloud?');
+      if (!state.micPermissionGranted) return;
     }
-    if (!recognition) initVoiceCapture();
+    if (!state.recognition) initVoiceCapture();
     try {
-      recognition?.start();
-    } catch (err) {
-      console.error('Unable to start voice capture:', err);
+      state.recognition?.start();
+    } catch (e) {
+      console.error('Voice capture error:', e);
     }
-  }
-  function stopVoiceCapture() {
+  };
+
+  const stopVoiceCapture = () => {
     try {
-      recognition?.stop();
-    } catch (err) {
-      console.error('Unable to stop voice capture:', err);
+      state.recognition?.stop();
+    } catch (e) {
+      console.error('Voice stop error:', e);
     }
     setFeedback('');
-    document.querySelectorAll('#passage-text .next-word').forEach(span => span.classList.remove('next-word'));
-  }
-  // Set feedback with color and auto-hide
-  function setFeedback(msg, type = '') {
-    feedbackDiv.textContent = msg;
-    feedbackDiv.classList.remove('success', 'error');
-    if (type) feedbackDiv.classList.add(type);
-    if (msg) setTimeout(() => setFeedback(''), 5000); // Auto-hide after 5s
-  }
-  // Event listeners with null checks
-  speedBtn?.addEventListener('click', adjustSpeed);
-  document.getElementById('prev-btn')?.addEventListener('click', () => flipTo(currentIndex - 1, 'prev'));
-  document.getElementById('next-btn')?.addEventListener('click', () => flipTo(currentIndex + 1, 'next'));
-  playBtn?.addEventListener('click', () => narrator.start(charPos));
-  pauseBtn?.addEventListener('click', () => narrator.pause());
-  resumeBtn?.addEventListener('click', () => narrator.resume());
-  stopBtn?.addEventListener('click', () => {
-    if (confirm('Are you sure you want to stop?')) narrator.stop();
-  });
-  micBtn?.addEventListener('click', startVoiceCapture);
-  micStopBtn?.addEventListener('click', stopVoiceCapture);
-  seekRange?.addEventListener('input', (e) => {
-    const pos = Math.floor((e.target.value / 100) * (passages[currentIndex]?.text?.length || 1));
-    charPos = pos;
-    if (isPlaying || isPaused) narrator.start(charPos);
-    else updateReadProgress(pos / (passages[currentIndex]?.text?.length || 1));
-  });
-  mapBtn?.addEventListener('click', () => {
-    narrator.stop(false);
-    storyMap.classList.remove('hidden');
-  });
-  closeMapBtn?.addEventListener('click', () => storyMap.classList.add('hidden'));
-  topBtn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 200) topBtn.classList.add('show');
-    else topBtn.classList.remove('show');
-  });
-  window.addEventListener('beforeunload', () => {
-    if (isPlaying || isPaused) localStorage.setItem('progress', JSON.stringify({ story: currentIndex, char: charPos }));
-    narrator.stop(false);
-    stopVoiceCapture();
-  });
-  if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(err => console.error('SW error:', err));
-  }
+    document.querySelectorAll('.passage-text .next-word').forEach(s => s.classList.remove('next-word'));
+  };
+
+  // ===== Word Hints =====
+  const getPhonics = (word) => {
+    // Simple phonics breakdown
+    const vowels = 'aeiou';
+    const parts = [];
+    let current = '';
+
+    for (const char of word.toLowerCase()) {
+      if (vowels.includes(char)) {
+        if (current) parts.push(current);
+        parts.push(char.toUpperCase());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    if (current) parts.push(current);
+
+    return parts.join('-') || word;
+  };
+
+  const setupWordHints = (container) => {
+    if (!state.settings.wordHints) return;
+
+    container.querySelectorAll('.word').forEach(word => {
+      word.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showWordHint(word, e);
+      });
+    });
+  };
+
+  const showWordHint = (wordElement, event) => {
+    const word = wordElement.textContent;
+    if (!word || !elements.wordHint) return;
+
+    elements.hintWord.textContent = word;
+    elements.hintPhonics.textContent = `Sounds like: ${getPhonics(word)}`;
+
+    const rect = wordElement.getBoundingClientRect();
+    elements.wordHint.style.left = `${rect.left}px`;
+    elements.wordHint.style.top = `${rect.bottom + 10}px`;
+    elements.wordHint.classList.remove('hidden');
+
+    // Auto-hide after 3 seconds
+    setTimeout(() => elements.wordHint.classList.add('hidden'), 3000);
+  };
+
+  const speakWord = (word) => {
+    const utter = new SpeechSynthesisUtterance(word);
+    utter.rate = 0.7;
+    if (elements.voiceSelect && availableVoices.length) {
+      utter.voice = availableVoices[elements.voiceSelect.value];
+    }
+    speechSynthesis.speak(utter);
+  };
+
+  // ===== Achievements =====
+  const checkAchievements = () => {
+    ACHIEVEMENTS.forEach(achievement => {
+      if (!state.unlockedAchievements.includes(achievement.id) && achievement.condition(state)) {
+        unlockAchievement(achievement);
+      }
+    });
+  };
+
+  const unlockAchievement = (achievement) => {
+    state.unlockedAchievements.push(achievement.id);
+    saveState();
+
+    // Show toast
+    if (elements.achievementToast) {
+      elements.toastMessage.textContent = `${achievement.icon} ${achievement.name}`;
+      elements.achievementToast.classList.remove('hidden');
+      safeConfetti({ particleCount: 100, spread: 70, origin: { y: 0.8 } });
+
+      setTimeout(() => {
+        elements.achievementToast.classList.add('hidden');
+      }, 4000);
+    }
+  };
+
+  const renderAchievements = () => {
+    if (!elements.achievementsGrid) return;
+    elements.achievementsGrid.innerHTML = '';
+
+    ACHIEVEMENTS.forEach(a => {
+      const unlocked = state.unlockedAchievements.includes(a.id);
+      const item = document.createElement('div');
+      item.className = `achievement-item ${unlocked ? 'unlocked' : 'locked'}`;
+      item.innerHTML = `
+        <div class="achievement-icon">${a.icon}</div>
+        <div class="achievement-name">${a.name}</div>
+        <div class="achievement-desc">${a.desc}</div>
+      `;
+      elements.achievementsGrid.appendChild(item);
+    });
+  };
+
+  // ===== Settings =====
+  const applySettings = () => {
+    // Theme
+    document.body.classList.remove('dark-mode', 'sepia-mode');
+    if (state.settings.theme === 'dark') {
+      document.body.classList.add('dark-mode');
+      state.usedDarkMode = true;
+      saveState();
+      checkAchievements();
+    } else if (state.settings.theme === 'sepia') {
+      document.body.classList.add('sepia-mode');
+    }
+
+    // Text size
+    document.documentElement.style.setProperty('--text-size-base', `${state.settings.textSize}rem`);
+
+    // Update UI
+    if (elements.textSize) elements.textSize.value = state.settings.textSize;
+    if (elements.autoAdvance) elements.autoAdvance.checked = state.settings.autoAdvance;
+    if (elements.wordHintsCheckbox) elements.wordHintsCheckbox.checked = state.settings.wordHints;
+
+    // Theme buttons
+    document.querySelectorAll('.theme-option').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === state.settings.theme);
+    });
+
+    // Speed buttons
+    document.querySelectorAll('.speed-option').forEach(btn => {
+      btn.classList.toggle('active', parseFloat(btn.dataset.speed) === state.currentSpeed);
+    });
+  };
+
+  // ===== Event Handlers =====
+  const setupEventListeners = () => {
+    // Navigation
+    elements.prevBtn?.addEventListener('click', () => flipTo(state.currentIndex - 1, 'prev'));
+    elements.nextBtn?.addEventListener('click', () => flipTo(state.currentIndex + 1, 'next'));
+
+    // Playback
+    elements.playBtn?.addEventListener('click', () => narrator.start(state.charPos));
+    elements.pauseBtn?.addEventListener('click', () => narrator.pause());
+    elements.resumeBtn?.addEventListener('click', () => narrator.resume());
+    elements.stopBtn?.addEventListener('click', () => narrator.stop());
+
+    // Speed
+    elements.speedBtn?.addEventListener('click', () => {
+      const idx = (SPEEDS.indexOf(state.currentSpeed) + 1) % SPEEDS.length;
+      state.currentSpeed = SPEEDS[idx];
+      if (state.currentSpeed === 1.2) {
+        state.usedTurbo = true;
+        saveState();
+        checkAchievements();
+      }
+      updateSpeedButton();
+      saveState();
+    });
+
+    // Voice capture
+    elements.micBtn?.addEventListener('click', startVoiceCapture);
+    elements.micStopBtn?.addEventListener('click', stopVoiceCapture);
+
+    // Star earning
+    elements.starBtn?.addEventListener('click', () => {
+      if (state.currentIndex > 0 && state.stars < state.passages.length) {
+        state.stars++;
+        saveState();
+        updateStats();
+        buildStoryMap();
+        updateNavButtons();
+        safeConfetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        checkAchievements();
+      }
+    });
+
+    // Book selector
+    elements.bookSelect?.addEventListener('change', () => {
+      const selected = elements.bookSelect.value;
+      if (!isBookUnlocked(selected)) {
+        setFeedback('Complete more stories to unlock this book!', 'info');
+        elements.bookSelect.value = state.currentBook;
+        return;
+      }
+      state.currentBook = selected;
+      loadBook();
+      saveState();
+    });
+
+    // Voice selector
+    [elements.voiceSelect, elements.settingsVoiceSelect].forEach(select => {
+      select?.addEventListener('change', () => {
+        localStorage.setItem('voiceIndex', select.value);
+        // Sync both selects
+        if (elements.voiceSelect) elements.voiceSelect.value = select.value;
+        if (elements.settingsVoiceSelect) elements.settingsVoiceSelect.value = select.value;
+      });
+    });
+
+    // Seek slider
+    elements.seekRange?.addEventListener('input', (e) => {
+      const pos = Math.floor((e.target.value / 100) * (state.passages[state.currentIndex]?.text?.length || 1));
+      state.charPos = pos;
+      if (state.isPlaying || state.isPaused) narrator.start(state.charPos);
+      else updateReadProgress(pos / (state.passages[state.currentIndex]?.text?.length || 1));
+    });
+
+    // Story map
+    elements.mapBtn?.addEventListener('click', () => {
+      narrator.stop(false);
+      elements.storyMap.classList.remove('hidden');
+    });
+    elements.closeMap?.addEventListener('click', () => elements.storyMap.classList.add('hidden'));
+
+    // Settings
+    elements.settingsBtn?.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
+    elements.closeSettings?.addEventListener('click', () => elements.settingsModal.classList.add('hidden'));
+
+    // Achievements
+    elements.achievementsBtn?.addEventListener('click', () => {
+      renderAchievements();
+      elements.achievementsModal.classList.remove('hidden');
+    });
+    elements.closeAchievements?.addEventListener('click', () => elements.achievementsModal.classList.add('hidden'));
+
+    // Help
+    elements.helpBtn?.addEventListener('click', () => elements.helpModal.classList.remove('hidden'));
+    elements.closeHelp?.addEventListener('click', () => elements.helpModal.classList.add('hidden'));
+
+    // Dark mode toggle
+    elements.darkModeBtn?.addEventListener('click', () => {
+      state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+      applySettings();
+      saveState();
+    });
+
+    // Fullscreen
+    elements.fullscreenBtn?.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(console.error);
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    // Back to top
+    elements.topBtn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    window.addEventListener('scroll', () => {
+      elements.topBtn?.classList.toggle('show', window.scrollY > 300);
+    });
+
+    // Settings controls
+    elements.textSize?.addEventListener('input', (e) => {
+      state.settings.textSize = parseFloat(e.target.value);
+      applySettings();
+      saveState();
+    });
+
+    elements.autoAdvance?.addEventListener('change', (e) => {
+      state.settings.autoAdvance = e.target.checked;
+      saveState();
+    });
+
+    elements.wordHintsCheckbox?.addEventListener('change', (e) => {
+      state.settings.wordHints = e.target.checked;
+      saveState();
+    });
+
+    elements.resetProgress?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+        localStorage.removeItem('phonicsworld_state');
+        location.reload();
+      }
+    });
+
+    // Theme options
+    document.querySelectorAll('.theme-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.settings.theme = btn.dataset.theme;
+        applySettings();
+        saveState();
+      });
+    });
+
+    // Speed options
+    document.querySelectorAll('.speed-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.currentSpeed = parseFloat(btn.dataset.speed);
+        if (state.currentSpeed === 1.2) {
+          state.usedTurbo = true;
+          checkAchievements();
+        }
+        applySettings();
+        updateSpeedButton();
+        saveState();
+      });
+    });
+
+    // Word hint speak button
+    elements.hintSpeak?.addEventListener('click', () => {
+      const word = elements.hintWord?.textContent;
+      if (word) speakWord(word);
+    });
+
+    // Close word hint when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.word-hint') && !e.target.classList.contains('word')) {
+        elements.wordHint?.classList.add('hidden');
+      }
+    });
+
+    // Close modals on backdrop click
+    [elements.storyMap, elements.settingsModal, elements.achievementsModal, elements.helpModal].forEach(modal => {
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Don't trigger if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          if (!elements.prevBtn?.disabled) flipTo(state.currentIndex - 1, 'prev');
+          break;
+        case 'ArrowRight':
+          if (!elements.nextBtn?.disabled) flipTo(state.currentIndex + 1, 'next');
+          break;
+        case ' ':
+          e.preventDefault();
+          if (state.isPlaying) narrator.pause();
+          else if (state.isPaused) narrator.resume();
+          else narrator.start(state.charPos);
+          break;
+        case 'm':
+        case 'M':
+          elements.mapBtn?.click();
+          break;
+        case 'f':
+        case 'F':
+          elements.fullscreenBtn?.click();
+          break;
+        case 'Escape':
+          [elements.storyMap, elements.settingsModal, elements.achievementsModal, elements.helpModal].forEach(m => {
+            m?.classList.add('hidden');
+          });
+          break;
+      }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      narrator.stop(false);
+      stopVoiceCapture();
+      saveState();
+    });
+  };
+
+  // ===== Initialization =====
+  const init = async () => {
+    loadState();
+    applySettings();
+    updateStats();
+    updateSpeedButton();
+
+    try {
+      state.categories = await loadData() || {};
+      Object.keys(state.categories).forEach(key => {
+        if (!state.categories[key]?.length) {
+          state.categories[key] = [{ title: 'Coming Soon!', text: 'More adventures on the way!', image: null }];
+        }
+      });
+
+      // Populate book selector
+      if (elements.bookSelect) {
+        elements.bookSelect.innerHTML = '';
+        Object.keys(state.categories).forEach(key => {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = key.replace('book', 'Book ');
+          if (!isBookUnlocked(key)) opt.textContent += ' 🔒';
+          elements.bookSelect.appendChild(opt);
+        });
+        elements.bookSelect.value = state.currentBook;
+      }
+
+      loadBook();
+      setFeedback('Welcome to PhonicsWorld! Press Play to start.', 'success');
+
+    } catch (err) {
+      console.error('Load error:', err);
+      setFeedback('Loading stories... Check your connection.', 'error');
+
+      const cached = localStorage.getItem('passages');
+      if (cached) {
+        state.categories = JSON.parse(cached).data || {};
+      } else {
+        state.categories = {
+          book1: [{ title: 'Welcome!', text: 'Stories are loading. Please wait or refresh.', image: null }]
+        };
+      }
+      loadBook();
+    }
+
+    setupEventListeners();
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+  };
+
+  init();
 });
