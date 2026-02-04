@@ -572,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (idx < state.stars) card.classList.add('completed');
 
       const imgPath = p.image ? `images/${p.image}` : PLACEHOLDER_IMAGE;
-      const status = idx > state.stars ? '🔒 Locked' : idx < state.stars ? '✓ Completed' : 'Current';
+     const status = idx < state.stars ? '✓ Completed' : 'Current';
 
       card.innerHTML = `
         <img class="story-card-image" src="${imgPath}" alt="${stripHtml(p.title)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMAGE}'">
@@ -583,12 +583,8 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       card.addEventListener('click', () => {
-        if (idx <= state.stars) {
-          elements.storyMap.classList.add('hidden');
-          flipTo(idx, idx > state.currentIndex ? 'next' : 'prev');
-        } else {
-          setFeedback('Earn more stars to unlock this story!', 'info');
-        }
+        elements.storyMap.classList.add('hidden');
+        flipTo(idx, idx > state.currentIndex ? 'next' : 'prev');
       });
 
       elements.storyGrid.appendChild(card);
