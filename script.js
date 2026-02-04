@@ -439,7 +439,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateSpeedButton = () => {
     const idx = SPEEDS.indexOf(state.currentSpeed);
     if (elements.speedBtn) {
-      elements.speedBtn.querySelector('.btn-icon').textContent = SPEED_LABELS[idx];
+      const label = SPEED_LABELS[idx] ?? SPEED_LABELS[0];
+      const icon = elements.speedBtn.querySelector('.pb-icon') || elements.speedBtn.querySelector('.btn-icon');
+      if (icon) {
+        icon.textContent = label;
+      } else {
+        elements.speedBtn.textContent = label;
+      }
     }
   };
 
