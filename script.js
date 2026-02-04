@@ -4,6 +4,36 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ===== Password Protection =====
+  const PASSWORD = 'kingstonrocks';
+  const passwordScreen = document.getElementById('password-screen');
+  const passwordForm = document.getElementById('password-form');
+  const passwordInput = document.getElementById('password-input');
+  const passwordError = document.getElementById('password-error');
+  const appContainer = document.getElementById('app');
+
+  // Check if already authenticated this session
+  if (sessionStorage.getItem('phonicsworld_auth') === 'true') {
+    passwordScreen.classList.add('hidden');
+    appContainer.classList.remove('hidden');
+  }
+
+  passwordForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (passwordInput.value === PASSWORD) {
+      sessionStorage.setItem('phonicsworld_auth', 'true');
+      passwordScreen.classList.add('hidden');
+      appContainer.classList.remove('hidden');
+    } else {
+      passwordError.classList.remove('hidden');
+      passwordInput.value = '';
+      passwordInput.focus();
+      // Shake animation
+      passwordInput.style.animation = 'shake 0.5s ease';
+      setTimeout(() => passwordInput.style.animation = '', 500);
+    }
+  });
+
   // ===== Constants =====
   const VERSION = '2.0';
   const SPEEDS = [0.3, 0.6, 0.9, 1.2];
@@ -707,6 +737,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const narrator = new Narrator();
 
   // ===== Speech Recognition =====
+  let accumulatedTranscript = '';
+  let isRecognitionActive = false;
+  let shouldRestartRecognition = false;
+
   const initVoiceCapture = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -718,40 +752,72 @@ document.addEventListener('DOMContentLoaded', () => {
     state.recognition.lang = 'en-US';
     state.recognition.continuous = true;
     state.recognition.interimResults = true;
-    state.recognition.maxAlternatives = 5;
+    state.recognition.maxAlternatives = 3;
 
     state.recognition.onresult = (event) => {
-      // Get the best transcript from all results
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript + ' ';
+      // Build transcript from final and interim results
+      let finalTranscript = accumulatedTranscript;
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript + ' ';
+        } else {
+          interimTranscript += result[0].transcript + ' ';
+        }
       }
+
+      // Update accumulated transcript with finals
+      accumulatedTranscript = finalTranscript;
+
+      // Use combined transcript for matching
+      const fullTranscript = (finalTranscript + interimTranscript).trim();
       const storyText = state.passages[state.currentIndex]?.text || '';
-      highlightReading(transcript.trim(), storyText);
+      highlightReading(fullTranscript, storyText);
     };
 
     state.recognition.onstart = () => {
+      isRecognitionActive = true;
       if (elements.micBtn) elements.micBtn.disabled = true;
       if (elements.micStopBtn) elements.micStopBtn.disabled = false;
       setFeedback('🎤 Listening... Read the story aloud!', 'info');
-      highlightNextWord(0);
+      if (accumulatedTranscript === '') {
+        highlightNextWord(0);
+      }
       state.usedMic = true;
       saveState();
       checkAchievements();
     };
 
     state.recognition.onend = () => {
-      if (elements.micBtn) elements.micBtn.disabled = false;
-      if (elements.micStopBtn) elements.micStopBtn.disabled = true;
+      isRecognitionActive = false;
+      // Auto-restart if we should keep listening
+      if (shouldRestartRecognition) {
+        setTimeout(() => {
+          try {
+            state.recognition?.start();
+          } catch (e) {
+            console.log('Recognition restart failed:', e);
+          }
+        }, 100);
+      } else {
+        if (elements.micBtn) elements.micBtn.disabled = false;
+        if (elements.micStopBtn) elements.micStopBtn.disabled = true;
+      }
     };
 
     state.recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'no-speech') {
-        setFeedback('No speech detected. Try speaking louder.', 'info');
+        // Don't stop - just keep listening
+        setFeedback('🎤 Keep reading... I\'m listening!', 'info');
       } else if (event.error === 'audio-capture') {
         setFeedback('No microphone found. Check your settings.', 'error');
-      } else if (event.error !== 'aborted') {
+        shouldRestartRecognition = false;
+      } else if (event.error === 'aborted') {
+        // User stopped - don't show error
+      } else {
         setFeedback(`Microphone error: ${event.error}`, 'error');
       }
     };
@@ -919,6 +985,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!state.micPermissionGranted) return;
     }
     if (!state.recognition) initVoiceCapture();
+
+    // Reset accumulated transcript for fresh start
+    accumulatedTranscript = '';
+    shouldRestartRecognition = true;
+
     try {
       state.recognition?.start();
     } catch (e) {
@@ -927,6 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const stopVoiceCapture = () => {
+    shouldRestartRecognition = false;
     try {
       state.recognition?.stop();
     } catch (e) {

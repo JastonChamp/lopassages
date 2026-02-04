@@ -12,7 +12,21 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <div id="app">
+  <!-- Password Lock Screen -->
+  <div class="password-screen" id="password-screen">
+    <div class="password-container">
+      <div class="password-icon">🔐</div>
+      <h1 class="password-title">PhonicsWorld</h1>
+      <p class="password-subtitle">Enter password to continue</p>
+      <form id="password-form">
+        <input type="password" id="password-input" class="password-input" placeholder="Enter password..." autocomplete="off" autofocus>
+        <button type="submit" class="password-btn">Unlock</button>
+      </form>
+      <p class="password-error hidden" id="password-error">Incorrect password. Try again!</p>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
