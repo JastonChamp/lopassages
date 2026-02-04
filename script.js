@@ -516,9 +516,13 @@ document.addEventListener('DOMContentLoaded', () => {
       this.currentSpan = null;
       this.timer = null;
       this.startTime = null;
+      this.wordIndex = 0;
+      this.words = [];
+      this.wordSpans = [];
+      this.boundarySupported = false;
     }
 
-    start(startPos = 0) {
+    start(startWordIndex = 0) {
       this.stop(false);
       const textElem = document.querySelector('.passage-text');
       if (!textElem) {
@@ -526,9 +530,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const text = textElem.textContent || '';
-      const speakText = cleanForTTS(text.slice(startPos));
+      // Get all word spans for highlighting
+      this.wordSpans = Array.from(document.querySelectorAll('.passage-text .word'));
+      if (this.wordSpans.length === 0) {
+        setFeedback('No words found to read.', 'error');
+        return;
+      }
+
+      // Build text from word spans for accurate sync
+      this.words = this.wordSpans.map(span => span.textContent.trim());
+      const speakText = this.words.slice(startWordIndex).join(' ');
       if (!speakText) return;
+
+      this.wordIndex = startWordIndex;
+      this.boundarySupported = false;
 
       this.utter = new SpeechSynthesisUtterance(speakText);
       this.utter.rate = state.currentSpeed;
@@ -538,26 +553,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (voice) this.utter.voice = voice;
       }
 
+      // Track word boundaries by counting words in the spoken text
+      let lastCharIndex = -1;
       this.utter.onboundary = (event) => {
-        if (event.name === 'word') {
-          const globalIndex = startPos + event.charIndex;
-          state.charPos = globalIndex;
+        if (event.name === 'word' && event.charIndex !== lastCharIndex) {
+          lastCharIndex = event.charIndex;
+          this.boundarySupported = true;
 
-          if (this.currentSpan) this.currentSpan.classList.remove('speaking');
-          const range = state.wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
-          if (range) {
-            range.span.classList.add('speaking');
-            this.currentSpan = range.span;
+          // Count how many words we've passed based on spaces before charIndex
+          const textUpToNow = speakText.substring(0, event.charIndex);
+          const wordsSpoken = textUpToNow.split(/\s+/).filter(w => w).length;
+          const newIndex = startWordIndex + wordsSpoken;
+
+          if (newIndex !== this.wordIndex && newIndex < this.wordSpans.length) {
+            this.highlightWord(newIndex);
           }
-
-          updateReadProgress(globalIndex / (text.length || 1));
         }
       };
 
       this.utter.onend = () => this.reset();
       this.utter.onerror = (e) => {
-        console.error('Speech error:', e);
-        setFeedback('Narration error. Try a different voice.', 'error');
+        if (e.error !== 'interrupted') {
+          console.error('Speech error:', e);
+          setFeedback('Narration error. Try a different voice.', 'error');
+        }
         this.reset();
       };
 
@@ -569,26 +588,50 @@ document.addEventListener('DOMContentLoaded', () => {
         updateControlButtons();
         markReadToday();
 
-        // Fallback timer for browsers that don't support boundary events
+        // Highlight first word immediately
+        this.highlightWord(startWordIndex);
+
+        // Fallback timer - only activates if boundary events don't fire
+        const avgWordDuration = (60 / (150 * state.currentSpeed)) * 1000; // ~150 WPM base
+        let lastHighlightTime = Date.now();
+
         this.timer = setInterval(() => {
-          if (state.charPos < text.length) {
-            state.charPos += Math.floor(state.currentSpeed * 5);
-            const globalIndex = Math.min(state.charPos, text.length - 1);
-            const range = state.wordRanges.find(r => globalIndex >= r.start && globalIndex <= r.end);
-            if (range) {
-              if (this.currentSpan) this.currentSpan.classList.remove('speaking');
-              range.span.classList.add('speaking');
-              this.currentSpan = range.span;
+          // Only use timer if boundary events aren't working
+          if (!this.boundarySupported && state.isPlaying) {
+            const elapsed = Date.now() - lastHighlightTime;
+            if (elapsed >= avgWordDuration && this.wordIndex < this.wordSpans.length - 1) {
+              this.highlightWord(this.wordIndex + 1);
+              lastHighlightTime = Date.now();
             }
-            updateReadProgress(globalIndex / text.length);
-          } else {
-            clearInterval(this.timer);
           }
+
+          // Update progress
+          updateReadProgress(this.wordIndex / (this.wordSpans.length || 1));
         }, 100);
+
       } catch (e) {
         console.error('Speech synthesis error:', e);
         setFeedback('Speech not available in this browser.', 'error');
       }
+    }
+
+    highlightWord(index) {
+      if (index < 0 || index >= this.wordSpans.length) return;
+
+      // Remove previous highlight
+      if (this.currentSpan) {
+        this.currentSpan.classList.remove('speaking');
+      }
+
+      // Add new highlight
+      this.wordIndex = index;
+      this.currentSpan = this.wordSpans[index];
+      this.currentSpan.classList.add('speaking');
+
+      // Scroll word into view if needed
+      this.currentSpan.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+
+      state.charPos = index;
     }
 
     pause() {
@@ -596,7 +639,6 @@ document.addEventListener('DOMContentLoaded', () => {
       speechSynthesis.pause();
       state.isPaused = true;
       state.isPlaying = false;
-      clearInterval(this.timer);
       updateControlButtons();
     }
 
@@ -625,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
       this.currentSpan = null;
       this.utter = null;
       this.startTime = null;
+      this.wordIndex = 0;
       state.isPlaying = false;
       state.isPaused = false;
 
@@ -648,8 +691,11 @@ document.addEventListener('DOMContentLoaded', () => {
         checkAchievements();
       }
 
+      if (this.currentSpan) this.currentSpan.classList.remove('speaking');
+
       this.currentSpan = null;
       this.startTime = null;
+      this.wordIndex = 0;
       state.isPlaying = false;
       state.isPaused = false;
       state.charPos = 0;
@@ -672,14 +718,14 @@ document.addEventListener('DOMContentLoaded', () => {
     state.recognition.lang = 'en-US';
     state.recognition.continuous = true;
     state.recognition.interimResults = true;
-    state.recognition.maxAlternatives = 3;
+    state.recognition.maxAlternatives = 5;
 
     state.recognition.onresult = (event) => {
-      const results = Array.from(event.results);
+      // Get the best transcript from all results
       let transcript = '';
-      results.forEach(result => {
-        transcript += result[0].transcript + ' ';
-      });
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript + ' ';
+      }
       const storyText = state.passages[state.currentIndex]?.text || '';
       highlightReading(transcript.trim(), storyText);
     };
@@ -687,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.recognition.onstart = () => {
       if (elements.micBtn) elements.micBtn.disabled = true;
       if (elements.micStopBtn) elements.micStopBtn.disabled = false;
-      setFeedback('Listening... Read the story aloud!', 'info');
+      setFeedback('🎤 Listening... Read the story aloud!', 'info');
       highlightNextWord(0);
       state.usedMic = true;
       saveState();
@@ -701,59 +747,156 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      setFeedback(`Microphone error: ${event.error}`, 'error');
+      if (event.error === 'no-speech') {
+        setFeedback('No speech detected. Try speaking louder.', 'info');
+      } else if (event.error === 'audio-capture') {
+        setFeedback('No microphone found. Check your settings.', 'error');
+      } else if (event.error !== 'aborted') {
+        setFeedback(`Microphone error: ${event.error}`, 'error');
+      }
     };
   };
 
   const highlightNextWord = (index) => {
     document.querySelectorAll('.passage-text .next-word').forEach(s => s.classList.remove('next-word'));
     const words = document.querySelectorAll('.passage-text .word');
-    if (words[index]) words[index].classList.add('next-word');
+    if (words[index]) {
+      words[index].classList.add('next-word');
+      words[index].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }
   };
 
+  // Levenshtein distance for better fuzzy matching
+  const levenshteinDistance = (s1, s2) => {
+    if (s1.length === 0) return s2.length;
+    if (s2.length === 0) return s1.length;
+
+    const matrix = [];
+    for (let i = 0; i <= s2.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= s1.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= s2.length; i++) {
+      for (let j = 1; j <= s1.length; j++) {
+        if (s2[i - 1] === s1[j - 1]) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    return matrix[s2.length][s1.length];
+  };
+
+  // Calculate similarity percentage using Levenshtein distance
   const similarity = (s1, s2) => {
     s1 = s1.toLowerCase().replace(/[^a-z]/g, '');
     s2 = s2.toLowerCase().replace(/[^a-z]/g, '');
+
     if (s1.length === 0 || s2.length === 0) return 0;
     if (s1 === s2) return 100;
 
-    let matches = 0;
-    const minLen = Math.min(s1.length, s2.length);
-    for (let i = 0; i < minLen; i++) {
-      if (s1[i] === s2[i]) matches++;
-    }
-    return (matches / Math.max(s1.length, s2.length)) * 100;
+    // Common phonetic variations
+    const normalize = (s) => s
+      .replace(/th/g, 'd')    // "the" sounds like "de"
+      .replace(/ph/g, 'f')    // "phone" sounds like "fone"
+      .replace(/ght/g, 't')   // "night" sounds like "nit"
+      .replace(/tion/g, 'shun') // "nation" sounds like "nashun"
+      .replace(/([aeiou])\1+/g, '$1'); // double vowels
+
+    const n1 = normalize(s1);
+    const n2 = normalize(s2);
+
+    // Try normalized comparison first
+    if (n1 === n2) return 95;
+
+    const maxLen = Math.max(s1.length, s2.length);
+    const distance = levenshteinDistance(s1, s2);
+    const normalizedDistance = levenshteinDistance(n1, n2);
+
+    // Use the better of the two scores
+    const score1 = ((maxLen - distance) / maxLen) * 100;
+    const score2 = ((maxLen - normalizedDistance) / maxLen) * 100;
+
+    return Math.max(score1, score2);
+  };
+
+  // Check if spoken word matches expected (with flexible matching)
+  const wordsMatch = (spoken, expected) => {
+    if (!spoken || !expected) return false;
+
+    const s = spoken.toLowerCase().replace(/[^a-z]/g, '');
+    const e = expected.toLowerCase().replace(/[^a-z]/g, '');
+
+    // Exact match
+    if (s === e) return true;
+
+    // Very short words need exact match
+    if (e.length <= 2) return s === e;
+
+    // For longer words, use similarity threshold
+    // Shorter words need higher similarity
+    const threshold = e.length <= 4 ? 70 : 60;
+    return similarity(s, e) >= threshold;
   };
 
   const highlightReading = (transcript, storyText) => {
-    const expected = storyText.split(/\s+/).map(w => w.replace(/[^a-zA-Z]/g, '').toLowerCase()).filter(w => w);
-    const spoken = transcript.split(/\s+/).map(w => w.replace(/[^a-zA-Z]/g, '').toLowerCase()).filter(w => w);
     const wordSpans = document.querySelectorAll('.passage-text .word');
+    const expected = Array.from(wordSpans).map(span =>
+      span.textContent.replace(/[^a-zA-Z']/g, '').toLowerCase()
+    ).filter(w => w);
+
+    const spoken = transcript.split(/\s+/)
+      .map(w => w.replace(/[^a-zA-Z']/g, '').toLowerCase())
+      .filter(w => w);
 
     let correct = 0;
-    let nextIndex = expected.length;
+    let firstIncorrect = expected.length;
+    let lastCorrect = -1;
+
+    // Use a sliding window approach for better matching
+    let spokenIndex = 0;
 
     expected.forEach((word, i) => {
       const span = wordSpans[i];
       if (!span) return;
       span.classList.remove('correct', 'incorrect');
 
-      if (spoken[i]) {
-        if (spoken[i] === word || similarity(spoken[i], word) > 75) {
-          span.classList.add('correct');
-          correct++;
-        } else {
-          span.classList.add('incorrect');
-          nextIndex = Math.min(nextIndex, i);
+      // Look for a match in the next few spoken words (handles insertions)
+      let matched = false;
+      for (let offset = 0; offset <= 2 && spokenIndex + offset < spoken.length; offset++) {
+        if (wordsMatch(spoken[spokenIndex + offset], word)) {
+          matched = true;
+          spokenIndex += offset + 1;
+          break;
         }
-      } else {
-        nextIndex = Math.min(nextIndex, i);
+      }
+
+      if (matched) {
+        span.classList.add('correct');
+        correct++;
+        lastCorrect = i;
+      } else if (spokenIndex < spoken.length) {
+        // Only mark as incorrect if we have more spoken words
+        span.classList.add('incorrect');
+        if (firstIncorrect > i) firstIncorrect = i;
+        spokenIndex++;
       }
     });
 
+    // Determine next word to read
+    const nextIndex = lastCorrect >= 0 ? Math.min(lastCorrect + 1, expected.length) : 0;
+
     state.accuracyScore = expected.length > 0 ? (correct / expected.length) * 100 : 0;
-    const scoreText = `Score: ${state.accuracyScore.toFixed(0)}%`;
-    setFeedback(scoreText, state.accuracyScore > 70 ? 'success' : 'error');
+    const scoreText = `🎯 Score: ${state.accuracyScore.toFixed(0)}% (${correct}/${expected.length} words)`;
+    setFeedback(scoreText, state.accuracyScore > 70 ? 'success' : state.accuracyScore > 40 ? 'info' : 'error');
     updateReadProgress(correct / expected.length);
     updateStats();
 
@@ -991,10 +1134,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Seek slider
     elements.seekRange?.addEventListener('input', (e) => {
-      const pos = Math.floor((e.target.value / 100) * (state.passages[state.currentIndex]?.text?.length || 1));
-      state.charPos = pos;
-      if (state.isPlaying || state.isPaused) narrator.start(state.charPos);
-      else updateReadProgress(pos / (state.passages[state.currentIndex]?.text?.length || 1));
+      const wordSpans = document.querySelectorAll('.passage-text .word');
+      const wordIndex = Math.floor((e.target.value / 100) * wordSpans.length);
+      state.charPos = wordIndex;
+      if (state.isPlaying || state.isPaused) narrator.start(wordIndex);
+      else updateReadProgress(wordIndex / (wordSpans.length || 1));
     });
 
     // Story map
