@@ -567,12 +567,11 @@ document.addEventListener('DOMContentLoaded', () => {
       card.tabIndex = 0;
       card.role = 'listitem';
 
-      if (idx > state.stars) card.classList.add('locked');
-      if (idx === state.currentIndex) card.classList.add('current');
+           if (idx === state.currentIndex) card.classList.add('current');
       if (idx < state.stars) card.classList.add('completed');
 
       const imgPath = p.image ? `images/${p.image}` : PLACEHOLDER_IMAGE;
-     const status = idx < state.stars ? '✓ Completed' : 'Current';
+       const status = idx < state.stars ? '✓ Completed' : (idx === state.currentIndex ? 'Current' : 'Available');
 
       card.innerHTML = `
         <img class="story-card-image" src="${imgPath}" alt="${stripHtml(p.title)}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMAGE}'">
@@ -621,11 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStats();
   };
 
-  const isBookUnlocked = (book) => {
-    if (book === 'book1') return true;
-    if (book === 'book2' && state.stars >= 5) return true;
-    return false;
-  };
+ const isBookUnlocked = () => true;
 
   // ===== Narrator Class =====
   class Narrator {
