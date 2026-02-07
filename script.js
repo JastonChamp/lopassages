@@ -36,9 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===== Constants =====
   const VERSION = '2.0';
-  const SPEEDS = [0.3, 0.6, 0.9, 1.2];
-  const SPEED_LABELS = ['🐢', '🚶', '🏃', '🚀'];
-  const SPEED_NAMES = ['Slow', 'Normal', 'Fast', 'Turbo'];
+  const SPEEDS = [0.15, 0.25, 0.4, 0.6, 0.85, 1.1];
+  const SPEED_LABELS = ['🐌', '🐢', '🐇', '🚶', '🏃', '🚀'];
+  const SPEED_NAMES = ['Super Slow', 'Very Slow', 'Slow', 'Normal', 'Fast', 'Turbo'];
 
   // Placeholder image SVG
   const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 350 200'%3E%3Crect fill='%23E8E8E8' width='350' height='200' rx='10'/%3E%3Ctext x='175' y='100' font-size='16' text-anchor='middle' fill='%23999'%3EImage Coming Soon%3C/text%3E%3Ctext x='175' y='125' font-size='40' text-anchor='middle'%3E📚%3C/text%3E%3C/svg%3E";
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentIndex: 0,
     wordRanges: [],
     stars: 0,
-    currentSpeed: 0.6,
+    currentSpeed: 0.4,
     charPos: 0,
     isPlaying: false,
     isPaused: false,
@@ -419,11 +419,27 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const updateControlButtons = () => {
-    if (elements.playBtn) elements.playBtn.disabled = state.isPlaying || state.isPaused;
-    if (elements.pauseBtn) elements.pauseBtn.disabled = !state.isPlaying;
-    if (elements.resumeBtn) {
-      elements.resumeBtn.disabled = !state.isPaused;
-      elements.resumeBtn.style.display = state.isPaused ? 'flex' : 'none';
+    // Handle play/pause/resume visibility for simplified UI
+    if (elements.playBtn && elements.pauseBtn && elements.resumeBtn) {
+      if (state.isPlaying) {
+        // Playing: show pause, hide play and resume
+        elements.playBtn.classList.add('hidden');
+        elements.pauseBtn.classList.remove('hidden');
+        elements.pauseBtn.disabled = false;
+        elements.resumeBtn.classList.add('hidden');
+      } else if (state.isPaused) {
+        // Paused: show resume, hide play and pause
+        elements.playBtn.classList.add('hidden');
+        elements.pauseBtn.classList.add('hidden');
+        elements.resumeBtn.classList.remove('hidden');
+        elements.resumeBtn.disabled = false;
+      } else {
+        // Stopped: show play, hide pause and resume
+        elements.playBtn.classList.remove('hidden');
+        elements.playBtn.disabled = false;
+        elements.pauseBtn.classList.add('hidden');
+        elements.resumeBtn.classList.add('hidden');
+      }
     }
     if (elements.stopBtn) elements.stopBtn.disabled = !(state.isPlaying || state.isPaused);
   };
@@ -439,10 +455,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateSpeedButton = () => {
     const idx = SPEEDS.indexOf(state.currentSpeed);
     if (elements.speedBtn) {
-      const label = SPEED_LABELS[idx] ?? SPEED_LABELS[0];
-      const icon = elements.speedBtn.querySelector('.pb-icon') || elements.speedBtn.querySelector('.btn-icon');
-      if (icon) {
-        icon.textContent = label;
+      // Try all selectors for old and new UI
+      const btnIcon = elements.speedBtn.querySelector('.pb-icon') || elements.speedBtn.querySelector('.btn-icon') || elements.speedBtn.querySelector('.speed-icon');
+      const label = SPEED_LABELS[idx >= 0 ? idx : 2]; // Default to slow (index 2)
+      if (btnIcon) {
+        btnIcon.textContent = label;
       } else {
         elements.speedBtn.textContent = label;
       }
@@ -875,8 +892,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.recognition.onstart = () => {
       isRecognitionActive = true;
-      if (elements.micBtn) elements.micBtn.disabled = true;
-      if (elements.micStopBtn) elements.micStopBtn.disabled = false;
+      // Toggle button visibility
+      if (elements.micBtn) elements.micBtn.classList.add('hidden');
+      if (elements.micStopBtn) {
+        elements.micStopBtn.classList.remove('hidden');
+        elements.micStopBtn.disabled = false;
+      }
       setFeedback('🎤 Listening... Read the story aloud!', 'info');
       if (accumulatedTranscript === '') {
         highlightNextWord(0);
@@ -898,8 +919,15 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }, 100);
       } else {
-        if (elements.micBtn) elements.micBtn.disabled = false;
-        if (elements.micStopBtn) elements.micStopBtn.disabled = true;
+        // Toggle button visibility back
+        if (elements.micBtn) {
+          elements.micBtn.classList.remove('hidden');
+          elements.micBtn.disabled = false;
+        }
+        if (elements.micStopBtn) {
+          elements.micStopBtn.classList.add('hidden');
+          elements.micStopBtn.disabled = true;
+        }
       }
     };
 
@@ -969,6 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Calculate similarity percentage using Levenshtein distance
+  // Optimized for young readers with many phonetic variations
   const similarity = (s1, s2) => {
     s1 = s1.toLowerCase().replace(/[^a-z]/g, '');
     s2 = s2.toLowerCase().replace(/[^a-z]/g, '');
@@ -976,13 +1005,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (s1.length === 0 || s2.length === 0) return 0;
     if (s1 === s2) return 100;
 
-    // Common phonetic variations
+    // Extensive phonetic normalization for young readers
     const normalize = (s) => s
-      .replace(/th/g, 'd')    // "the" sounds like "de"
-      .replace(/ph/g, 'f')    // "phone" sounds like "fone"
-      .replace(/ght/g, 't')   // "night" sounds like "nit"
-      .replace(/tion/g, 'shun') // "nation" sounds like "nashun"
-      .replace(/([aeiou])\1+/g, '$1'); // double vowels
+      // Common consonant confusions
+      .replace(/th/g, 'd')     // "the" sounds like "de"
+      .replace(/ph/g, 'f')     // "phone" sounds like "fone"
+      .replace(/wh/g, 'w')     // "what" sounds like "wat"
+      .replace(/ck/g, 'k')     // "back" sounds like "bak"
+      .replace(/gh/g, '')      // "night" -> "nit"
+      .replace(/ght/g, 't')    // "night" -> "nit"
+      .replace(/kn/g, 'n')     // "know" -> "now"
+      .replace(/wr/g, 'r')     // "write" -> "rite"
+      .replace(/mb$/g, 'm')    // "climb" -> "clim"
+      // Vowel confusions common in children
+      .replace(/ee/g, 'e')     // "see" -> "se"
+      .replace(/oo/g, 'u')     // "book" -> "buk"
+      .replace(/ea/g, 'e')     // "read" -> "red"
+      .replace(/ou/g, 'o')     // "house" -> "hose"
+      .replace(/ai/g, 'a')     // "rain" -> "ran"
+      .replace(/ay/g, 'a')     // "day" -> "da"
+      .replace(/ow/g, 'o')     // "cow" -> "co"
+      // Common endings
+      .replace(/tion/g, 'shun')
+      .replace(/sion/g, 'zhun')
+      .replace(/ing$/g, 'in')  // "running" -> "runnin"
+      .replace(/ed$/g, 'd')    // "walked" -> "walkd"
+      // Remove silent letters and double letters
+      .replace(/([aeiou])\1+/g, '$1')
+      .replace(/([bcdfghjklmnpqrstvwxyz])\1/g, '$1');
 
     const n1 = normalize(s1);
     const n2 = normalize(s2);
@@ -998,10 +1048,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const score1 = ((maxLen - distance) / maxLen) * 100;
     const score2 = ((maxLen - normalizedDistance) / maxLen) * 100;
 
-    return Math.max(score1, score2);
+    // Bonus points if the words sound similar at the start
+    let bonus = 0;
+    if (n1.length >= 2 && n2.length >= 2 && n1.substring(0, 2) === n2.substring(0, 2)) {
+      bonus = 10;
+    }
+
+    return Math.min(100, Math.max(score1, score2) + bonus);
   };
 
-  // Check if spoken word matches expected (with flexible matching)
+  // Check if spoken word matches expected (with very flexible matching for young readers)
   const wordsMatch = (spoken, expected) => {
     if (!spoken || !expected) return false;
 
@@ -1011,13 +1067,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Exact match
     if (s === e) return true;
 
-    // Very short words need exact match
-    if (e.length <= 2) return s === e;
+    // Very short words (1-2 chars) - be more lenient
+    if (e.length <= 2) {
+      // Allow if spoken starts with expected or vice versa
+      return s === e || s.startsWith(e) || e.startsWith(s);
+    }
 
-    // For longer words, use similarity threshold
-    // Shorter words need higher similarity
-    const threshold = e.length <= 4 ? 70 : 60;
-    return similarity(s, e) >= threshold;
+    // For words 3+ chars, use very lenient similarity threshold
+    // Young readers often add/skip sounds
+    const threshold = e.length <= 3 ? 50 : e.length <= 5 ? 45 : 40;
+    const sim = similarity(s, e);
+
+    // Also check if word starts similarly (first 2-3 chars match)
+    const prefixLen = Math.min(3, Math.floor(e.length / 2));
+    const prefixMatch = s.substring(0, prefixLen) === e.substring(0, prefixLen);
+
+    return sim >= threshold || (prefixMatch && sim >= 30);
   };
 
   const highlightReading = (transcript, storyText) => {
@@ -1034,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let firstIncorrect = expected.length;
     let lastCorrect = -1;
 
-    // Use a sliding window approach for better matching
+    // Use a wider sliding window for young readers who might skip or add words
     let spokenIndex = 0;
 
     expected.forEach((word, i) => {
@@ -1042,9 +1107,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!span) return;
       span.classList.remove('correct', 'incorrect');
 
-      // Look for a match in the next few spoken words (handles insertions)
+      // Look for a match in the next several spoken words (very forgiving)
       let matched = false;
-      for (let offset = 0; offset <= 2 && spokenIndex + offset < spoken.length; offset++) {
+      const searchWindow = Math.min(5, spoken.length - spokenIndex);
+      for (let offset = 0; offset < searchWindow; offset++) {
         if (wordsMatch(spoken[spokenIndex + offset], word)) {
           matched = true;
           spokenIndex += offset + 1;
@@ -1052,12 +1118,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // Also try looking back one word in case child skipped ahead
+      if (!matched && spokenIndex > 0) {
+        if (wordsMatch(spoken[spokenIndex - 1], word)) {
+          matched = true;
+        }
+      }
+
       if (matched) {
         span.classList.add('correct');
         correct++;
         lastCorrect = i;
-      } else if (spokenIndex < spoken.length) {
+      } else if (spokenIndex < spoken.length && i <= lastCorrect + 3) {
         // Only mark as incorrect if we have more spoken words
+        // and we're close to where we expect the reader to be
         span.classList.add('incorrect');
         if (firstIncorrect > i) firstIncorrect = i;
         spokenIndex++;
@@ -1254,9 +1328,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===== Event Handlers =====
   const setupEventListeners = () => {
-    // Navigation
+    // Navigation (both old and new buttons)
     elements.prevBtn?.addEventListener('click', () => flipTo(state.currentIndex - 1, 'prev'));
     elements.nextBtn?.addEventListener('click', () => flipTo(state.currentIndex + 1, 'next'));
+
+    // New simplified nav buttons
+    const prevNavBtn = document.getElementById('prev-nav-btn');
+    const nextNavBtn = document.getElementById('next-nav-btn');
+    prevNavBtn?.addEventListener('click', () => flipTo(state.currentIndex - 1, 'prev'));
+    nextNavBtn?.addEventListener('click', () => flipTo(state.currentIndex + 1, 'next'));
 
     // Playback
     elements.playBtn?.addEventListener('click', () => narrator.start(state.charPos));
@@ -1268,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.speedBtn?.addEventListener('click', () => {
       const idx = (SPEEDS.indexOf(state.currentSpeed) + 1) % SPEEDS.length;
       state.currentSpeed = SPEEDS[idx];
-      if (state.currentSpeed === 1.2) {
+      if (state.currentSpeed === 1.1) {
         state.usedTurbo = true;
         saveState();
         checkAchievements();
@@ -1429,7 +1509,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.speed-option').forEach(btn => {
       btn.addEventListener('click', () => {
         state.currentSpeed = parseFloat(btn.dataset.speed);
-        if (state.currentSpeed === 1.2) {
+        if (state.currentSpeed === 1.1) {
           state.usedTurbo = true;
           checkAchievements();
         }

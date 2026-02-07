@@ -59,7 +59,7 @@
       </div>
     </div>
 
-    <!-- Compact Header -->
+    <!-- Simple Header for Kids -->
     <header class="app-header">
       <div class="header-left">
         <div class="logo">
@@ -67,64 +67,46 @@
           <span class="logo-text">PhonicsWorld</span>
         </div>
       </div>
-      <div class="header-stats">
-        <div class="mini-stat" title="Stars Earned">
-          <span class="mini-stat-icon">⭐</span>
-          <span class="mini-stat-value" id="star-count">0</span>
-        </div>
-        <div class="mini-stat" title="Stories Read">
-          <span class="mini-stat-icon">📖</span>
-          <span class="mini-stat-value" id="stories-read">0</span>
-        </div>
-        <div class="mini-stat streak" title="Reading Streak">
-          <span class="mini-stat-icon">🔥</span>
-          <span class="mini-stat-value" id="streak-count">0</span>
+      <div class="header-center">
+        <div class="star-display" title="Your Stars!">
+          <span class="star-icon">⭐</span>
+          <span class="star-value" id="star-count">0</span>
         </div>
       </div>
       <div class="header-right">
-        <button class="icon-btn" id="focus-mode-btn" title="Focus Mode">📖</button>
-        <button class="icon-btn" id="achievements-btn" title="Achievements">🏆</button>
         <button class="icon-btn" id="settings-btn" title="Settings">⚙️</button>
       </div>
     </header>
 
+    <!-- Hidden stats for tracking -->
+    <div class="hidden">
+      <span id="stories-read">0</span>
+      <span id="streak-count">0</span>
+      <span id="focus-mode-btn"></span>
+      <span id="achievements-btn"></span>
+    </div>
+
     <!-- Main Content Area -->
     <main class="main-content" id="main-content">
-      <!-- Quick Stats (collapsible) -->
-      <div class="quick-stats" id="quick-stats">
-        <div class="stat-card">
-          <div class="stat-emoji">🎯</div>
-          <div class="stat-details">
-            <span class="stat-number" id="accuracy-stat">0%</span>
-            <span class="stat-text">Accuracy</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-emoji">⏱️</div>
-          <div class="stat-details">
-            <span class="stat-number" id="time-spent">0m</span>
-            <span class="stat-text">Reading Time</span>
-          </div>
+      <!-- Simple Story Info -->
+      <div class="story-info-bar">
+        <select id="book-select" class="book-selector"></select>
+        <div class="story-counter">
+          Story <span id="current-story">1</span> of <span id="total-stories">13</span>
         </div>
       </div>
 
-      <!-- Story Selection Bar -->
-      <div class="story-nav">
-        <button class="nav-arrow" id="prev-btn" disabled title="Previous Story">
-          <span>◀</span>
-        </button>
-        <div class="story-selector" id="story-selector">
-          <select id="book-select" class="book-dropdown"></select>
-          <div class="story-progress">
-            <span class="story-number">Story <span id="current-story">1</span> of <span id="total-stories">13</span></span>
-            <div class="mini-progress">
-              <div class="mini-progress-fill" id="progress-bar"></div>
-            </div>
-          </div>
-        </div>
-        <button class="nav-arrow" id="next-btn" disabled title="Next Story">
-          <span>▶</span>
-        </button>
+      <!-- Progress Bar -->
+      <div class="story-progress-bar">
+        <div class="progress-fill" id="progress-bar"></div>
+      </div>
+
+      <!-- Hidden elements for JS compatibility -->
+      <div class="hidden">
+        <span id="accuracy-stat">0%</span>
+        <span id="time-spent">0m</span>
+        <button id="prev-btn"></button>
+        <button id="next-btn"></button>
       </div>
 
       <!-- Reading Area -->
@@ -151,58 +133,56 @@
       <div class="feedback-area" id="feedback" aria-live="polite"></div>
     </main>
 
-    <!-- Floating Playback Controls - Always Visible -->
+    <!-- Floating Playback Controls - Simplified for Kids -->
     <div class="playback-bar" id="playback-bar">
-      <div class="playback-controls">
-        <!-- Left Section: Story Map -->
-        <button class="playback-btn secondary" id="map-btn" title="Story Map">
-          <span class="pb-icon">🗺️</span>
-          <span class="pb-label">Stories</span>
+      <div class="playback-controls-simple">
+        <!-- Big Play/Pause Button -->
+        <button class="big-btn listen" id="play-btn" title="Listen to Story">
+          <span class="big-btn-icon">▶️</span>
+          <span class="big-btn-text">Listen</span>
+        </button>
+        <button class="big-btn listen pause-state hidden" id="pause-btn" disabled title="Pause">
+          <span class="big-btn-icon">⏸️</span>
+          <span class="big-btn-text">Pause</span>
+        </button>
+        <button class="big-btn listen hidden" id="resume-btn" disabled title="Resume">
+          <span class="big-btn-icon">▶️</span>
+          <span class="big-btn-text">Resume</span>
         </button>
 
-        <!-- Center Section: Main Playback -->
-        <div class="playback-main">
-          <button class="playback-btn" id="speed-btn" title="Reading Speed">
-            <span class="pb-icon">🐢</span>
-          </button>
+        <!-- Big Read Aloud Button -->
+        <button class="big-btn read" id="mic-btn" title="Read Aloud">
+          <span class="big-btn-icon">🎤</span>
+          <span class="big-btn-text">Read</span>
+        </button>
+        <button class="big-btn read stop-state hidden" id="mic-stop-btn" disabled title="Stop">
+          <span class="big-btn-icon">⏹️</span>
+          <span class="big-btn-text">Stop</span>
+        </button>
 
-          <button class="playback-btn large play" id="play-btn" title="Play Narration">
-            <span class="pb-icon">▶️</span>
-          </button>
-          <button class="playback-btn large pause" id="pause-btn" disabled title="Pause">
-            <span class="pb-icon">⏸️</span>
-          </button>
-          <button class="playback-btn large" id="resume-btn" disabled title="Resume" style="display:none;">
-            <span class="pb-icon">▶️</span>
-          </button>
-          <button class="playback-btn stop" id="stop-btn" disabled title="Stop">
-            <span class="pb-icon">⏹️</span>
-          </button>
-        </div>
-
-        <!-- Right Section: Voice & Mic -->
-        <div class="playback-voice">
-          <button class="playback-btn mic" id="mic-btn" title="Practice Reading">
-            <span class="pb-icon">🎤</span>
-            <span class="pb-label">Read</span>
-          </button>
-          <button class="playback-btn mic-stop" id="mic-stop-btn" disabled title="Stop Recording">
-            <span class="pb-icon">⏹️</span>
-          </button>
-          <button class="playback-btn star" id="star-btn" disabled title="Earn Star">
-            <span class="pb-icon">⭐</span>
-            <span class="pb-label">Star!</span>
-          </button>
-        </div>
+        <!-- Big Star Button -->
+        <button class="big-btn star" id="star-btn" disabled title="Earn a Star!">
+          <span class="big-btn-icon">⭐</span>
+          <span class="big-btn-text">Star!</span>
+        </button>
       </div>
 
-      <!-- Voice Selector (expandable) -->
-      <div class="voice-selector-bar">
-        <select id="voice-select" class="voice-select" aria-label="Choose voice"></select>
-        <button class="icon-btn small" id="help-btn" title="Help">❓</button>
-        <button class="icon-btn small" id="fullscreen-btn" title="Fullscreen">🖥️</button>
-        <button class="icon-btn small" id="dark-mode-btn" title="Dark Mode">🌙</button>
+      <!-- Simple Navigation Row -->
+      <div class="simple-nav-row">
+        <button class="nav-btn" id="prev-nav-btn" title="Previous Story">◀️</button>
+        <button class="nav-btn stories" id="map-btn" title="All Stories">📚 Stories</button>
+        <button class="speed-toggle" id="speed-btn" title="Speed">
+          <span class="speed-icon">🐢</span>
+        </button>
+        <button class="nav-btn" id="next-nav-btn" title="Next Story">▶️</button>
       </div>
+
+      <!-- Hidden elements for functionality -->
+      <button class="hidden" id="stop-btn" disabled></button>
+      <select id="voice-select" class="hidden" aria-label="Choose voice"></select>
+      <button class="hidden" id="help-btn"></button>
+      <button class="hidden" id="fullscreen-btn"></button>
+      <button class="hidden" id="dark-mode-btn"></button>
     </div>
 
     <!-- Story Map Modal -->
@@ -229,10 +209,12 @@
           <div class="setting-group">
             <label class="setting-label">Reading Speed</label>
             <div class="speed-options">
-              <button class="speed-option" data-speed="0.3">🐢 Slow</button>
+              <button class="speed-option" data-speed="0.15">🐌 Super Slow</button>
+              <button class="speed-option" data-speed="0.25">🐢 Very Slow</button>
+              <button class="speed-option" data-speed="0.4">🐇 Slow</button>
               <button class="speed-option active" data-speed="0.6">🚶 Normal</button>
-              <button class="speed-option" data-speed="0.9">🏃 Fast</button>
-              <button class="speed-option" data-speed="1.2">🚀 Turbo</button>
+              <button class="speed-option" data-speed="0.85">🏃 Fast</button>
+              <button class="speed-option" data-speed="1.1">🚀 Turbo</button>
             </div>
           </div>
           <div class="setting-group">
