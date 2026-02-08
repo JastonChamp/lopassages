@@ -686,18 +686,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (voice) this.utter.voice = voice;
       }
 
-      // Track word boundaries by counting words in the spoken text
+      // Track word boundaries - onboundary fires at START of each word
       let lastCharIndex = -1;
-      let boundaryCount = 0;
 
       this.utter.onboundary = (event) => {
         if (event.name === 'word' && event.charIndex !== lastCharIndex) {
           lastCharIndex = event.charIndex;
           this.boundarySupported = true;
-          boundaryCount++;
 
-          // More accurate word tracking - use boundary count directly
-          const newIndex = startWordIndex + boundaryCount;
+          // Calculate which word is being spoken based on character position
+          // Count spaces before this position to determine word index
+          const textBeforeBoundary = speakText.substring(0, event.charIndex);
+          const wordsBefore = textBeforeBoundary.split(/\s+/).filter(w => w.length > 0).length;
+          const newIndex = startWordIndex + wordsBefore;
 
           if (newIndex !== this.wordIndex && newIndex < this.wordSpans.length) {
             this.highlightWord(newIndex);
@@ -725,39 +726,49 @@ document.addEventListener('DOMContentLoaded', () => {
         // Highlight first word immediately
         this.highlightWord(startWordIndex);
 
-        // Fallback timer - activates if boundary events don't fire
-        // Calculate word duration based on actual word lengths for better accuracy
+        // Precise fallback timer for browsers without boundary support
         const words = speakText.split(/\s+/).filter(w => w);
-        const avgCharsPerWord = words.reduce((sum, w) => sum + w.length, 0) / (words.length || 1);
+        const totalChars = speakText.length;
 
-        // Base rate: ~120 WPM at speed 1.0, adjusted for word length
-        // Slower speeds need proportionally more time
-        const baseWPM = 120;
-        const msPerWord = (60000 / (baseWPM * state.currentSpeed));
+        // Estimate total duration: ~150 chars/min at rate 1.0
+        // Adjusted for speech rate
+        const charsPerSecond = 2.5 * state.currentSpeed;
+        const estimatedTotalMs = (totalChars / charsPerSecond) * 1000;
 
-        let lastHighlightTime = Date.now();
-        let fallbackWordIndex = startWordIndex;
+        // Pre-calculate word start times based on character positions
+        const wordStartTimes = [];
+        let charCount = 0;
+        words.forEach((word, i) => {
+          const startRatio = charCount / totalChars;
+          wordStartTimes.push(startRatio * estimatedTotalMs);
+          charCount += word.length + 1; // +1 for space
+        });
 
         this.timer = setInterval(() => {
-          // Only use timer if boundary events aren't working
-          if (!this.boundarySupported && state.isPlaying && !state.isPaused) {
-            const elapsed = Date.now() - lastHighlightTime;
+          if (!state.isPlaying || state.isPaused) return;
 
-            // Adjust timing based on current word length
-            const currentWord = words[fallbackWordIndex - startWordIndex] || '';
-            const wordLengthFactor = Math.max(0.5, currentWord.length / avgCharsPerWord);
-            const adjustedDuration = msPerWord * wordLengthFactor;
+          const elapsed = Date.now() - this.startTime;
 
-            if (elapsed >= adjustedDuration && fallbackWordIndex < this.wordSpans.length - 1) {
-              fallbackWordIndex++;
-              this.highlightWord(fallbackWordIndex);
-              lastHighlightTime = Date.now();
+          // Only use fallback if boundary events aren't firing
+          if (!this.boundarySupported) {
+            // Find which word should be highlighted based on elapsed time
+            let targetIndex = startWordIndex;
+            for (let i = 0; i < wordStartTimes.length; i++) {
+              if (elapsed >= wordStartTimes[i]) {
+                targetIndex = startWordIndex + i;
+              } else {
+                break;
+              }
+            }
+
+            if (targetIndex !== this.wordIndex && targetIndex < this.wordSpans.length) {
+              this.highlightWord(targetIndex);
             }
           }
 
           // Update progress
           updateReadProgress(this.wordIndex / (this.wordSpans.length || 1));
-        }, 50); // Check more frequently for smoother highlighting
+        }, 30); // Very frequent checks for smooth sync
 
       } catch (e) {
         console.error('Speech synthesis error:', e);
