@@ -688,15 +688,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Track word boundaries by counting words in the spoken text
       let lastCharIndex = -1;
+      let boundaryCount = 0;
+
       this.utter.onboundary = (event) => {
         if (event.name === 'word' && event.charIndex !== lastCharIndex) {
           lastCharIndex = event.charIndex;
           this.boundarySupported = true;
+          boundaryCount++;
 
-          // Count how many words we've passed based on spaces before charIndex
-          const textUpToNow = speakText.substring(0, event.charIndex);
-          const wordsSpoken = textUpToNow.split(/\s+/).filter(w => w).length;
-          const newIndex = startWordIndex + wordsSpoken;
+          // More accurate word tracking - use boundary count directly
+          const newIndex = startWordIndex + boundaryCount;
 
           if (newIndex !== this.wordIndex && newIndex < this.wordSpans.length) {
             this.highlightWord(newIndex);
@@ -724,23 +725,39 @@ document.addEventListener('DOMContentLoaded', () => {
         // Highlight first word immediately
         this.highlightWord(startWordIndex);
 
-        // Fallback timer - only activates if boundary events don't fire
-        const avgWordDuration = (60 / (150 * state.currentSpeed)) * 1000; // ~150 WPM base
+        // Fallback timer - activates if boundary events don't fire
+        // Calculate word duration based on actual word lengths for better accuracy
+        const words = speakText.split(/\s+/).filter(w => w);
+        const avgCharsPerWord = words.reduce((sum, w) => sum + w.length, 0) / (words.length || 1);
+
+        // Base rate: ~120 WPM at speed 1.0, adjusted for word length
+        // Slower speeds need proportionally more time
+        const baseWPM = 120;
+        const msPerWord = (60000 / (baseWPM * state.currentSpeed));
+
         let lastHighlightTime = Date.now();
+        let fallbackWordIndex = startWordIndex;
 
         this.timer = setInterval(() => {
           // Only use timer if boundary events aren't working
-          if (!this.boundarySupported && state.isPlaying) {
+          if (!this.boundarySupported && state.isPlaying && !state.isPaused) {
             const elapsed = Date.now() - lastHighlightTime;
-            if (elapsed >= avgWordDuration && this.wordIndex < this.wordSpans.length - 1) {
-              this.highlightWord(this.wordIndex + 1);
+
+            // Adjust timing based on current word length
+            const currentWord = words[fallbackWordIndex - startWordIndex] || '';
+            const wordLengthFactor = Math.max(0.5, currentWord.length / avgCharsPerWord);
+            const adjustedDuration = msPerWord * wordLengthFactor;
+
+            if (elapsed >= adjustedDuration && fallbackWordIndex < this.wordSpans.length - 1) {
+              fallbackWordIndex++;
+              this.highlightWord(fallbackWordIndex);
               lastHighlightTime = Date.now();
             }
           }
 
           // Update progress
           updateReadProgress(this.wordIndex / (this.wordSpans.length || 1));
-        }, 100);
+        }, 50); // Check more frequently for smoother highlighting
 
       } catch (e) {
         console.error('Speech synthesis error:', e);
