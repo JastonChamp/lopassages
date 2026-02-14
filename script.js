@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===== Constants =====
-  const VERSION = '3.0';
+  const VERSION = '3.1';
   const SPEEDS = [0.15, 0.25, 0.4, 0.6, 0.85, 1.1];
   const SPEED_LABELS = ['🐌', '🐢', '🐇', '🚶', '🏃', '🚀'];
   const SPEED_NAMES = ['Super Slow', 'Very Slow', 'Slow', 'Normal', 'Fast', 'Turbo'];
@@ -680,6 +680,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // Clear any previous highlighting from mic mode or previous playback
+      this.wordSpans.forEach(span => {
+        span.classList.remove('speaking', 'correct', 'incorrect', 'next-word');
+      });
+
       // Build text from word spans for accurate sync
       this.words = this.wordSpans.map(span => span.textContent.trim());
       const speakText = this.words.slice(startWordIndex).join(' ');
@@ -825,8 +830,10 @@ document.addEventListener('DOMContentLoaded', () => {
       speechSynthesis.cancel();
       clearInterval(this.timer);
 
-      if (this.currentSpan) this.currentSpan.classList.remove('speaking');
-      document.querySelectorAll('.passage-text .speaking').forEach(s => s.classList.remove('speaking'));
+      // Clear all word highlighting classes
+      document.querySelectorAll('.passage-text .word').forEach(span => {
+        span.classList.remove('speaking', 'correct', 'incorrect', 'next-word');
+      });
 
       // Track reading time
       if (this.startTime) {
