@@ -799,19 +799,8 @@ document.addEventListener('DOMContentLoaded', () => {
       this.currentSpan = this.wordSpans[index];
       this.currentSpan.classList.add('speaking');
 
-      // Scroll word into view only if it's truly outside the visible area
-      const bookContainer = document.querySelector('.book-container');
-      if (bookContainer && this.currentSpan) {
-        const containerRect = bookContainer.getBoundingClientRect();
-        const wordRect = this.currentSpan.getBoundingClientRect();
-
-        // Only scroll if the word is fully above or below the visible container
-        if (wordRect.bottom < containerRect.top || wordRect.top > containerRect.bottom) {
-          // Scroll so the word appears in the upper third of the container
-          const scrollTop = this.currentSpan.offsetTop - bookContainer.offsetTop - (containerRect.height * 0.3);
-          bookContainer.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
-        }
-      }
+      // No auto-scrolling - let the user control their own scroll position
+      // The highlighted word is visually distinct enough to follow
 
       state.charPos = index;
     }
@@ -998,18 +987,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const words = document.querySelectorAll('.passage-text .word');
     if (words[index]) {
       words[index].classList.add('next-word');
-
-      // Scroll within book container only
-      const bookContainer = document.querySelector('.book-container');
-      if (bookContainer) {
-        const containerRect = bookContainer.getBoundingClientRect();
-        const wordRect = words[index].getBoundingClientRect();
-
-        if (wordRect.top < containerRect.top + 50 || wordRect.bottom > containerRect.bottom - 50) {
-          const scrollTop = words[index].offsetTop - bookContainer.offsetTop - (containerRect.height / 2);
-          bookContainer.scrollTo({ top: scrollTop, behavior: 'smooth' });
-        }
-      }
     }
   };
 
