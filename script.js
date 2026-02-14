@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseBtn: $('pause-btn'),
     resumeBtn: $('resume-btn'),
     stopBtn: $('stop-btn'),
+    stopVisibleBtn: $('stop-visible-btn'),
     prevBtn: $('prev-btn'),
     nextBtn: $('next-btn'),
     mapBtn: $('map-btn'),
@@ -418,26 +419,36 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const updateControlButtons = () => {
-    // Handle play/pause/resume visibility for simplified UI
+    // Handle play/pause/resume/stop visibility for simplified UI
     if (elements.playBtn && elements.pauseBtn && elements.resumeBtn) {
       if (state.isPlaying) {
-        // Playing: show pause, hide play and resume
+        // Playing: show pause + stop, hide play and resume
         elements.playBtn.classList.add('hidden');
         elements.pauseBtn.classList.remove('hidden');
         elements.pauseBtn.disabled = false;
         elements.resumeBtn.classList.add('hidden');
       } else if (state.isPaused) {
-        // Paused: show resume, hide play and pause
+        // Paused: show resume + stop, hide play and pause
         elements.playBtn.classList.add('hidden');
         elements.pauseBtn.classList.add('hidden');
         elements.resumeBtn.classList.remove('hidden');
         elements.resumeBtn.disabled = false;
       } else {
-        // Stopped: show play, hide pause and resume
+        // Stopped: show play, hide pause, resume, and stop
         elements.playBtn.classList.remove('hidden');
         elements.playBtn.disabled = false;
         elements.pauseBtn.classList.add('hidden');
         elements.resumeBtn.classList.add('hidden');
+      }
+    }
+    // Show visible stop button when playing or paused
+    if (elements.stopVisibleBtn) {
+      if (state.isPlaying || state.isPaused) {
+        elements.stopVisibleBtn.classList.remove('hidden');
+        elements.stopVisibleBtn.disabled = false;
+      } else {
+        elements.stopVisibleBtn.classList.add('hidden');
+        elements.stopVisibleBtn.disabled = true;
       }
     }
     if (elements.stopBtn) elements.stopBtn.disabled = !(state.isPlaying || state.isPaused);
@@ -788,16 +799,17 @@ document.addEventListener('DOMContentLoaded', () => {
       this.currentSpan = this.wordSpans[index];
       this.currentSpan.classList.add('speaking');
 
-      // Scroll word into view within the book container only (not the whole page)
+      // Scroll word into view only if it's truly outside the visible area
       const bookContainer = document.querySelector('.book-container');
       if (bookContainer && this.currentSpan) {
         const containerRect = bookContainer.getBoundingClientRect();
         const wordRect = this.currentSpan.getBoundingClientRect();
 
-        // Only scroll if word is outside the visible area of the container
-        if (wordRect.top < containerRect.top + 50 || wordRect.bottom > containerRect.bottom - 50) {
-          const scrollTop = this.currentSpan.offsetTop - bookContainer.offsetTop - (containerRect.height / 2);
-          bookContainer.scrollTo({ top: scrollTop, behavior: 'smooth' });
+        // Only scroll if the word is fully above or below the visible container
+        if (wordRect.bottom < containerRect.top || wordRect.top > containerRect.bottom) {
+          // Scroll so the word appears in the upper third of the container
+          const scrollTop = this.currentSpan.offsetTop - bookContainer.offsetTop - (containerRect.height * 0.3);
+          bookContainer.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
         }
       }
 
@@ -1405,6 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.pauseBtn?.addEventListener('click', () => narrator.pause());
     elements.resumeBtn?.addEventListener('click', () => narrator.resume());
     elements.stopBtn?.addEventListener('click', () => narrator.stop());
+    elements.stopVisibleBtn?.addEventListener('click', () => narrator.stop());
 
     // Speed
     elements.speedBtn?.addEventListener('click', () => {
