@@ -1168,6 +1168,307 @@ body::before {
   .book-container { box-shadow: none; max-height: none; }
 }
 
+/* ===== Word Hint Tooltip ===== */
+.word-hint {
+  position: fixed;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-xl);
+  z-index: 2100;
+  min-width: 180px;
+  text-align: center;
+  border: 2px solid var(--primary-lighter);
+  animation: hintPop 0.2s ease;
+}
+
+@keyframes hintPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.hint-word {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: var(--primary);
+  margin-bottom: var(--space-xs);
+}
+
+.hint-phonics {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-md);
+  font-weight: 600;
+}
+
+.hint-speak {
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: var(--transition-normal);
+}
+
+.hint-speak:hover {
+  background: var(--primary-dark);
+}
+
+/* ===== Achievements ===== */
+.achievements-summary {
+  text-align: center;
+  padding: var(--space-lg);
+  background: var(--primary-lighter);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.achievement-count {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--primary);
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--space-md);
+}
+
+.achievement-item {
+  text-align: center;
+  padding: var(--space-md);
+  background: var(--bg-main);
+  border-radius: var(--radius-lg);
+  border: 2px solid transparent;
+}
+
+.achievement-item.unlocked {
+  background: var(--success-light);
+  border-color: var(--success);
+}
+
+.achievement-item.locked {
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+
+.achievement-icon { font-size: 2rem; margin-bottom: var(--space-xs); }
+.achievement-name { font-weight: 700; font-size: 0.75rem; margin-bottom: 2px; }
+.achievement-desc { font-size: 0.7rem; color: var(--text-secondary); }
+
+/* ===== Settings Controls ===== */
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.toggle-text {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.size-slider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.size-slider span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.size-slider span.large {
+  font-size: 1.6rem;
+}
+
+.size-slider input[type="range"] {
+  flex: 1;
+  accent-color: var(--primary);
+}
+
+/* ===== Help Section ===== */
+.help-card {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-main);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-md);
+}
+
+.help-icon {
+  font-size: 1.8rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-lighter);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.help-content h3 {
+  font-size: 0.95rem;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.help-content p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.help-shortcuts {
+  background: var(--bg-main);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-lg);
+}
+
+.help-shortcuts h3 {
+  color: var(--primary);
+  margin-bottom: var(--space-md);
+  font-size: 0.95rem;
+}
+
+.shortcut-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.shortcut {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.shortcut kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  font-size: 0.8rem;
+  margin-right: 4px;
+}
+
+/* ===== Story Map Modal Wider ===== */
+.story-map-content {
+  max-width: 700px;
+}
+
+.story-card-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ===== Page Loader ===== */
+.page-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: var(--space-md);
+  color: var(--text-muted);
+}
+
+.loader-character {
+  font-size: 3rem;
+}
+
+/* ===== Sepia Mode ===== */
+.sepia-mode {
+  --bg-main: #F5F0E1;
+  --bg-card: #FDFBF5;
+  --text-primary: #5D4E37;
+  --text-secondary: #7D6E57;
+  --border: #E8DFC8;
+}
+
+/* ===== Focus Mode ===== */
+.focus-mode .app-header,
+.focus-mode .story-info-bar,
+.focus-mode .story-progress-bar,
+.focus-mode .mascot-helper {
+  display: none !important;
+}
+
+/* ===== Noscript ===== */
+.noscript-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+/* ===== Seek Slider ===== */
+.reading-progress {
+  padding: var(--space-sm);
+}
+
+.reading-progress-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-xs);
+}
+
+.reading-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: var(--radius-full);
+  transition: width 0.2s ease;
+}
+
+.seek-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.seek-slider::-webkit-slider-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+
+.seek-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -7px;
+}
+
 /* ===== Hide Old/Unused Elements ===== */
 .quick-stats,
 .story-nav,
@@ -1176,8 +1477,7 @@ body::before {
 .voice-selector-bar,
 .playback-btn,
 .icon-btn.small,
-.top-btn,
-.reading-progress {
+.top-btn {
   display: none !important;
 }
 
