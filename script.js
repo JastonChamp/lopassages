@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===== Constants =====
-  const VERSION = '2.0';
+  const VERSION = '3.0';
   const SPEEDS = [0.15, 0.25, 0.4, 0.6, 0.85, 1.1];
   const SPEED_LABELS = ['🐌', '🐢', '🐇', '🚶', '🏃', '🚀'];
   const SPEED_NAMES = ['Super Slow', 'Very Slow', 'Slow', 'Normal', 'Fast', 'Turbo'];
@@ -73,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     isPaused: false,
     recognition: null,
     accuracyScore: 0,
-    micPermissionGranted: false,
     storiesRead: 0,
     totalReadingTime: 0,
     streak: 0,
@@ -415,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateNavButtons = () => {
     if (elements.prevBtn) elements.prevBtn.disabled = state.currentIndex === 0;
     if (elements.nextBtn) elements.nextBtn.disabled = state.currentIndex === state.passages.length - 1;
-    if (elements.starBtn) elements.starBtn.disabled = state.currentIndex === 0 || state.stars >= state.passages.length;
+    if (elements.starBtn) elements.starBtn.disabled = state.stars >= state.passages.length;
   };
 
   const updateControlButtons = () => {
@@ -967,10 +966,17 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (event.error === 'audio-capture') {
         setFeedback('No microphone found. Check your settings.', 'error');
         shouldRestartRecognition = false;
+        resetMicButtons();
+      } else if (event.error === 'not-allowed') {
+        setFeedback('Microphone access denied. Allow it in browser settings.', 'error');
+        shouldRestartRecognition = false;
+        resetMicButtons();
       } else if (event.error === 'aborted') {
         // User stopped - don't show error
       } else {
         setFeedback(`Microphone error: ${event.error}`, 'error');
+        shouldRestartRecognition = false;
+        resetMicButtons();
       }
     };
   };
@@ -1192,11 +1198,14 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const startVoiceCapture = () => {
-    if (!state.micPermissionGranted) {
-      state.micPermissionGranted = confirm('Allow microphone to practice reading aloud?');
-      if (!state.micPermissionGranted) return;
-    }
     if (!state.recognition) initVoiceCapture();
+    if (!state.recognition) {
+      setFeedback('Speech recognition not available. Try Chrome.', 'error');
+      return;
+    }
+
+    // Stop narrator if playing
+    narrator.stop(false);
 
     // Reset accumulated transcript for fresh start
     accumulatedTranscript = '';
@@ -1206,9 +1215,34 @@ document.addEventListener('DOMContentLoaded', () => {
     showMascotMessage('recording', 3000);
 
     try {
-      state.recognition?.start();
+      // Stop any existing recognition first
+      if (isRecognitionActive) {
+        state.recognition.stop();
+        // Wait a moment then restart
+        setTimeout(() => {
+          try { state.recognition.start(); } catch (e) {
+            console.error('Voice capture restart error:', e);
+            resetMicButtons();
+          }
+        }, 200);
+      } else {
+        state.recognition.start();
+      }
     } catch (e) {
       console.error('Voice capture error:', e);
+      setFeedback('Could not start microphone. Please try again.', 'error');
+      resetMicButtons();
+    }
+  };
+
+  const resetMicButtons = () => {
+    if (elements.micBtn) {
+      elements.micBtn.classList.remove('hidden');
+      elements.micBtn.disabled = false;
+    }
+    if (elements.micStopBtn) {
+      elements.micStopBtn.classList.add('hidden');
+      elements.micStopBtn.disabled = true;
     }
   };
 
@@ -1391,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Star earning
     elements.starBtn?.addEventListener('click', () => {
-      if (state.currentIndex > 0 && state.stars < state.passages.length) {
+      if (state.stars < state.passages.length) {
         state.stars++;
         saveState();
         updateStats();
