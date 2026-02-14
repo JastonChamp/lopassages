@@ -557,6 +557,15 @@ body::before {
   box-shadow: 0 8px 30px rgba(251, 191, 36, 0.5);
 }
 
+.big-btn.stop {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+}
+
+.big-btn.stop:hover:not(:disabled) {
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.5);
+}
+
 /* Navigation Row */
 .simple-nav-row {
   display: flex;
