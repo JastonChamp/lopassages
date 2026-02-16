@@ -3,110 +3,167 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="description" content="PhonicsWorld - A world-class interactive reading app for children with AI-powered speech recognition, achievements, and engaging stories.">
-  <meta name="theme-color" content="#6C5CE7">
+  <meta name="description" content="PhonicsWorld - A world-class interactive language learning app with exercises, gamification, and AI-powered speech recognition.">
+  <meta name="theme-color" content="#58CC02">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>PhonicsWorld - Learn to Read!</title>
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Fredoka+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <!-- Password Lock Screen -->
+  <!-- ===== PASSWORD LOCK SCREEN ===== -->
   <div class="password-screen" id="password-screen">
     <div class="password-container">
-      <div class="password-mascot">
-        <div class="mascot-body">
-          <div class="mascot-face">
-            <div class="mascot-eyes">
-              <div class="mascot-eye"></div>
-              <div class="mascot-eye"></div>
-            </div>
-            <div class="mascot-smile"></div>
+      <div class="pw-mascot">
+        <div class="pw-mascot-body">
+          <div class="pw-mascot-face">
+            <div class="pw-eye"></div>
+            <div class="pw-eye"></div>
           </div>
+          <div class="pw-smile"></div>
         </div>
       </div>
-      <h1 class="password-title">PhonicsWorld</h1>
-      <p class="password-subtitle">Enter the magic word to start reading!</p>
+      <h1 class="pw-title">PhonicsWorld</h1>
+      <p class="pw-subtitle">Enter the magic word to start learning!</p>
       <form id="password-form">
-        <input type="password" id="password-input" class="password-input" placeholder="Type password here..." autocomplete="off" autofocus>
-        <button type="submit" class="password-btn">
-          <span>Let's Read!</span>
+        <input type="password" id="password-input" class="pw-input" placeholder="Type password here..." autocomplete="off" autofocus>
+        <button type="submit" class="pw-btn">
+          <span>Let's Go!</span>
         </button>
       </form>
-      <p class="password-error hidden" id="password-error">Oops! That's not right. Try again!</p>
+      <p class="pw-error hidden" id="password-error">Oops! That's not right. Try again!</p>
     </div>
   </div>
 
+  <!-- ===== MAIN APP ===== -->
   <div id="app" class="hidden">
-    <!-- Floating Mascot Helper -->
-    <div class="mascot-helper" id="mascot-helper">
-      <div class="mascot-bubble" id="mascot-bubble">
-        <span id="mascot-message">Hi! I'm Buddy! Let's read together!</span>
-      </div>
-      <div class="mascot-character" id="mascot-character">
-        <div class="mascot-body">
-          <div class="mascot-face">
-            <div class="mascot-eyes">
-              <div class="mascot-eye"></div>
-              <div class="mascot-eye"></div>
-            </div>
-            <div class="mascot-smile"></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Simple Header for Kids -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="logo">
-          <span class="logo-icon">📚</span>
-          <span class="logo-text">PhonicsWorld</span>
-        </div>
+    <!-- ===== TOP NAV BAR ===== -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button class="top-bar-icon" id="nav-book-select" title="Select Book">
+          <span class="book-flag" id="book-flag">1</span>
+        </button>
       </div>
-      <div class="header-center">
-        <div class="star-display" title="Your Stars!">
-          <span class="star-icon">⭐</span>
-          <span class="star-value" id="star-count">0</span>
-        </div>
+      <div class="top-bar-center">
+        <button class="streak-badge" id="streak-badge" title="Your streak">
+          <span class="streak-flame">&#x1F525;</span>
+          <span class="streak-num" id="streak-count">0</span>
+        </button>
+        <button class="gems-badge" id="gems-badge" title="Your XP">
+          <span class="gems-icon">&#x2B50;</span>
+          <span class="gems-num" id="xp-display">0</span>
+        </button>
+        <button class="hearts-badge" id="hearts-badge" title="Hearts remaining">
+          <span class="hearts-icon">&#x2764;&#xFE0F;</span>
+          <span class="hearts-num" id="hearts-display">5</span>
+        </button>
       </div>
-      <div class="header-right">
-        <button class="icon-btn" id="settings-btn" title="Settings">⚙️</button>
+      <div class="top-bar-right">
+        <button class="top-bar-icon" id="profile-btn" title="Profile">
+          <span class="profile-avatar" id="profile-avatar">&#x1F464;</span>
+        </button>
       </div>
     </header>
 
-    <!-- Hidden stats for tracking -->
-    <div class="hidden">
-      <span id="stories-read">0</span>
-      <span id="streak-count">0</span>
-      <span id="focus-mode-btn"></span>
-      <span id="achievements-btn"></span>
+    <!-- ===== TAB BAR (bottom navigation) ===== -->
+    <nav class="tab-bar" id="tab-bar">
+      <button class="tab-item active" data-tab="learn">
+        <span class="tab-icon">&#x1F3E0;</span>
+        <span class="tab-label">Learn</span>
+      </button>
+      <button class="tab-item" data-tab="review">
+        <span class="tab-icon">&#x1F4DD;</span>
+        <span class="tab-label">Practice</span>
+        <span class="tab-badge hidden" id="review-badge">0</span>
+      </button>
+      <button class="tab-item" data-tab="stories">
+        <span class="tab-icon">&#x1F4D6;</span>
+        <span class="tab-label">Stories</span>
+      </button>
+      <button class="tab-item" data-tab="profile">
+        <span class="tab-icon">&#x1F3C6;</span>
+        <span class="tab-label">Profile</span>
+      </button>
+    </nav>
+
+    <!-- ===== LEARN TAB - Learning Path ===== -->
+    <main class="tab-content active" id="tab-learn">
+      <div class="learn-header">
+        <div class="book-title-row">
+          <h2 class="section-title" id="current-book-title">Book 1</h2>
+          <div class="book-progress-mini">
+            <div class="mini-progress-bar">
+              <div class="mini-progress-fill" id="book-progress-fill"></div>
+            </div>
+            <span class="mini-progress-text" id="book-progress-text">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Learning Path (Duolingo-style vertical path) -->
+      <div class="learning-path" id="learning-path">
+        <!-- Dynamically populated skill nodes -->
+      </div>
+    </main>
+
+    <!-- ===== REVIEW/PRACTICE TAB ===== -->
+    <div class="tab-content" id="tab-review">
+      <div class="review-hero">
+        <div class="review-icon-big">&#x1F9E0;</div>
+        <h2>Practice</h2>
+        <p>Strengthen your words with spaced repetition</p>
+      </div>
+
+      <div class="review-stats-row">
+        <div class="review-stat-card">
+          <span class="rsc-num" id="total-words-learned">0</span>
+          <span class="rsc-label">Words Learned</span>
+        </div>
+        <div class="review-stat-card">
+          <span class="rsc-num" id="words-mastered">0</span>
+          <span class="rsc-label">Mastered</span>
+        </div>
+        <div class="review-stat-card">
+          <span class="rsc-num" id="words-due">0</span>
+          <span class="rsc-label">Due for Review</span>
+        </div>
+      </div>
+
+      <button class="big-action-btn review-btn" id="start-review-btn">
+        <span class="bab-icon">&#x1F504;</span>
+        <span class="bab-text">Start Practice Session</span>
+      </button>
+
+      <div class="word-strength-section">
+        <h3>Word Strength</h3>
+        <div class="strength-bars" id="strength-bars">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="weak-words-section" id="weak-words-section">
+        <h3>Words to Focus On</h3>
+        <div class="weak-words-grid" id="weak-words-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
     </div>
 
-    <!-- Main Content Area -->
-    <main class="main-content" id="main-content">
-      <!-- Simple Story Info -->
-      <div class="story-info-bar">
+    <!-- ===== STORIES TAB (original reading mode) ===== -->
+    <div class="tab-content" id="tab-stories">
+      <div class="stories-header">
         <select id="book-select" class="book-selector"></select>
         <div class="story-counter">
           Story <span id="current-story">1</span> of <span id="total-stories">13</span>
         </div>
       </div>
 
-      <!-- Progress Bar -->
       <div class="story-progress-bar">
         <div class="progress-fill" id="progress-bar"></div>
-      </div>
-
-      <!-- Hidden elements for JS compatibility -->
-      <div class="hidden">
-        <span id="accuracy-stat">0%</span>
-        <span id="time-spent">0m</span>
-        <button id="prev-btn"></button>
-        <button id="next-btn"></button>
       </div>
 
       <!-- Reading Area -->
@@ -114,13 +171,11 @@
         <div class="book-container" id="book">
           <div class="page" id="page">
             <div class="page-loader">
-              <div class="loader-character">📚</div>
+              <div class="loader-character">&#x1F4DA;</div>
               <p>Loading your adventure...</p>
             </div>
           </div>
         </div>
-
-        <!-- Reading Progress Bar -->
         <div class="reading-progress">
           <div class="reading-progress-track">
             <div class="reading-progress-fill" id="read-progress-bar"></div>
@@ -129,72 +184,286 @@
         </div>
       </div>
 
-      <!-- Feedback Area -->
       <div class="feedback-area" id="feedback" aria-live="polite"></div>
-    </main>
 
-    <!-- Floating Playback Controls - Simplified for Kids -->
-    <div class="playback-bar" id="playback-bar">
-      <div class="playback-controls-simple">
-        <!-- Big Play/Pause Button -->
-        <button class="big-btn listen" id="play-btn" title="Listen to Story">
-          <span class="big-btn-icon">▶️</span>
-          <span class="big-btn-text">Listen</span>
-        </button>
-        <button class="big-btn listen pause-state hidden" id="pause-btn" disabled title="Pause">
-          <span class="big-btn-icon">⏸️</span>
-          <span class="big-btn-text">Pause</span>
-        </button>
-        <button class="big-btn listen hidden" id="resume-btn" disabled title="Resume">
-          <span class="big-btn-icon">▶️</span>
-          <span class="big-btn-text">Resume</span>
-        </button>
-        <button class="big-btn stop hidden" id="stop-visible-btn" disabled title="Stop Reading">
-          <span class="big-btn-icon">⏹️</span>
-          <span class="big-btn-text">Stop</span>
-        </button>
-
-        <!-- Big Read Aloud Button -->
-        <button class="big-btn read" id="mic-btn" title="Read Aloud">
-          <span class="big-btn-icon">🎤</span>
-          <span class="big-btn-text">Read</span>
-        </button>
-        <button class="big-btn read stop-state hidden" id="mic-stop-btn" disabled title="Stop">
-          <span class="big-btn-icon">⏹️</span>
-          <span class="big-btn-text">Stop</span>
-        </button>
-
-        <!-- Big Star Button -->
-        <button class="big-btn star" id="star-btn" disabled title="Earn a Star!">
-          <span class="big-btn-icon">⭐</span>
-          <span class="big-btn-text">Star!</span>
-        </button>
+      <!-- Story Playback Controls -->
+      <div class="story-controls" id="story-controls">
+        <div class="story-controls-row">
+          <button class="sc-btn listen" id="play-btn" title="Listen to Story">
+            <span class="sc-icon">&#x25B6;&#xFE0F;</span>
+            <span class="sc-label">Listen</span>
+          </button>
+          <button class="sc-btn listen pause-state hidden" id="pause-btn" disabled title="Pause">
+            <span class="sc-icon">&#x23F8;&#xFE0F;</span>
+            <span class="sc-label">Pause</span>
+          </button>
+          <button class="sc-btn listen hidden" id="resume-btn" disabled title="Resume">
+            <span class="sc-icon">&#x25B6;&#xFE0F;</span>
+            <span class="sc-label">Resume</span>
+          </button>
+          <button class="sc-btn stop hidden" id="stop-visible-btn" disabled title="Stop">
+            <span class="sc-icon">&#x23F9;&#xFE0F;</span>
+            <span class="sc-label">Stop</span>
+          </button>
+          <button class="sc-btn read" id="mic-btn" title="Read Aloud">
+            <span class="sc-icon">&#x1F3A4;</span>
+            <span class="sc-label">Read</span>
+          </button>
+          <button class="sc-btn read stop-state hidden" id="mic-stop-btn" disabled title="Stop">
+            <span class="sc-icon">&#x23F9;&#xFE0F;</span>
+            <span class="sc-label">Stop</span>
+          </button>
+          <button class="sc-btn star" id="star-btn" disabled title="Earn a Star!">
+            <span class="sc-icon">&#x2B50;</span>
+            <span class="sc-label">Star!</span>
+          </button>
+        </div>
+        <div class="story-nav-row">
+          <button class="sn-btn" id="prev-nav-btn" title="Previous">&#x25C0;&#xFE0F;</button>
+          <button class="sn-btn stories-btn" id="map-btn" title="All Stories">&#x1F4DA; Stories</button>
+          <button class="speed-toggle" id="speed-btn" title="Speed">
+            <span class="speed-icon">&#x1F422;</span>
+          </button>
+          <button class="sn-btn" id="next-nav-btn" title="Next">&#x25B6;&#xFE0F;</button>
+        </div>
       </div>
-
-      <!-- Simple Navigation Row -->
-      <div class="simple-nav-row">
-        <button class="nav-btn" id="prev-nav-btn" title="Previous Story">◀️</button>
-        <button class="nav-btn stories" id="map-btn" title="All Stories">📚 Stories</button>
-        <button class="speed-toggle" id="speed-btn" title="Speed">
-          <span class="speed-icon">🐢</span>
-        </button>
-        <button class="nav-btn" id="next-nav-btn" title="Next Story">▶️</button>
-      </div>
-
-      <!-- Hidden elements for functionality -->
-      <button class="hidden" id="stop-btn" disabled></button>
-      <select id="voice-select" class="hidden" aria-label="Choose voice"></select>
-      <button class="hidden" id="help-btn"></button>
-      <button class="hidden" id="fullscreen-btn"></button>
-      <button class="hidden" id="dark-mode-btn"></button>
     </div>
 
-    <!-- Story Map Modal -->
+    <!-- ===== PROFILE TAB ===== -->
+    <div class="tab-content" id="tab-profile">
+      <div class="profile-header">
+        <div class="profile-avatar-large" id="profile-avatar-large">&#x1F464;</div>
+        <div class="profile-info">
+          <h2 class="profile-name">Learner</h2>
+          <div class="profile-league" id="profile-league">
+            <span id="league-icon">&#x1F947;</span>
+            <span id="league-name">Bronze League</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level & XP -->
+      <div class="profile-level-card">
+        <div class="plc-top">
+          <span class="plc-level">Level <strong id="level-display">1</strong></span>
+          <span class="plc-xp" id="level-xp-text">0 / 50 XP</span>
+        </div>
+        <div class="plc-bar">
+          <div class="plc-fill" id="level-progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">&#x1F525;</span>
+          <span class="stat-value" id="profile-streak">0</span>
+          <span class="stat-label">Day Streak</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">&#x2B50;</span>
+          <span class="stat-value" id="profile-total-xp">0</span>
+          <span class="stat-label">Total XP</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">&#x1F3AF;</span>
+          <span class="stat-value" id="profile-accuracy">0%</span>
+          <span class="stat-label">Accuracy</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">&#x1F4DA;</span>
+          <span class="stat-value" id="profile-lessons">0</span>
+          <span class="stat-label">Lessons</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">&#x1F31F;</span>
+          <span class="stat-value" id="profile-perfect">0</span>
+          <span class="stat-label">Perfect</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">&#x1F4AC;</span>
+          <span class="stat-value" id="profile-words">0</span>
+          <span class="stat-label">Words</span>
+        </div>
+      </div>
+
+      <!-- Weekly Activity -->
+      <div class="weekly-activity">
+        <h3>This Week</h3>
+        <div class="weekly-bars" id="weekly-bars">
+          <div class="wb-day"><div class="wb-bar"><div class="wb-fill"></div></div><span>S</span></div>
+          <div class="wb-day"><div class="wb-bar"><div class="wb-fill"></div></div><span>M</span></div>
+          <div class="wb-day"><div class="wb-bar"><div class="wb-fill"></div></div><span>T</span></div>
+          <div class="wb-day"><div class="wb-bar"><div class="wb-fill"></div></div><span>W</span></div>
+          <div class="wb-day"><div class="wb-bar"><div class="wb-fill"></div></div><span>T</span></div>
+          <div class="wb-day"><div class="wb-bar"><div class="wb-fill"></div></div><span>F</span></div>
+          <div class="wb-day"><div class="wb-bar"><div class="wb-fill"></div></div><span>S</span></div>
+        </div>
+      </div>
+
+      <!-- Achievements -->
+      <div class="achievements-section">
+        <h3>Achievements</h3>
+        <div class="achievements-grid" id="achievements-grid"></div>
+      </div>
+
+      <!-- Daily Goal -->
+      <div class="daily-goal-section">
+        <h3>Daily Goal</h3>
+        <div class="daily-goal-card">
+          <div class="dg-progress-ring" id="dg-progress-ring">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" class="dg-track"/>
+              <circle cx="50" cy="50" r="45" class="dg-fill" id="dg-fill"/>
+            </svg>
+            <div class="dg-inner">
+              <span class="dg-xp" id="dg-current-xp">0</span>
+              <span class="dg-goal">/ <span id="dg-goal-xp">20</span> XP</span>
+            </div>
+          </div>
+          <div class="dg-options" id="dg-options">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Section -->
+      <div class="settings-section">
+        <h3>Settings</h3>
+        <div class="setting-item">
+          <span>Sound Effects</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="sound-toggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-item">
+          <span>Reading Speed</span>
+          <div class="speed-options-row" id="speed-options-row">
+            <button class="speed-chip" data-speed="0.15">&#x1F40C;</button>
+            <button class="speed-chip" data-speed="0.25">&#x1F422;</button>
+            <button class="speed-chip" data-speed="0.4">&#x1F407;</button>
+            <button class="speed-chip active" data-speed="0.6">&#x1F6B6;</button>
+            <button class="speed-chip" data-speed="0.85">&#x1F3C3;</button>
+            <button class="speed-chip" data-speed="1.1">&#x1F680;</button>
+          </div>
+        </div>
+        <div class="setting-item">
+          <span>Text Size</span>
+          <input type="range" id="text-size" min="1" max="2.5" step="0.1" value="1.5" class="range-slider">
+        </div>
+        <div class="setting-item">
+          <span>Theme</span>
+          <div class="theme-pills">
+            <button class="theme-pill active" data-theme="light">Light</button>
+            <button class="theme-pill" data-theme="dark">Dark</button>
+            <button class="theme-pill" data-theme="sepia">Sepia</button>
+          </div>
+        </div>
+        <div class="setting-item">
+          <span>Voice</span>
+          <select id="voice-select" class="setting-select"></select>
+        </div>
+        <button class="danger-btn" id="reset-progress">Reset All Progress</button>
+      </div>
+    </div>
+
+    <!-- ===== EXERCISE SCREEN (overlay) ===== -->
+    <div class="exercise-screen hidden" id="exercise-screen">
+      <!-- Exercise Top Bar -->
+      <div class="ex-top-bar">
+        <button class="ex-close-btn" id="ex-close-btn">&#x2715;</button>
+        <div class="ex-progress-bar">
+          <div class="ex-progress-fill" id="ex-progress-fill"></div>
+        </div>
+        <div class="ex-hearts" id="ex-hearts">
+          <span class="ex-heart">&#x2764;&#xFE0F;</span>
+          <span class="ex-heart">&#x2764;&#xFE0F;</span>
+          <span class="ex-heart">&#x2764;&#xFE0F;</span>
+          <span class="ex-heart">&#x2764;&#xFE0F;</span>
+          <span class="ex-heart">&#x2764;&#xFE0F;</span>
+        </div>
+      </div>
+
+      <!-- Exercise Content Area -->
+      <div class="ex-content" id="ex-content">
+        <!-- Dynamically populated based on exercise type -->
+      </div>
+
+      <!-- Exercise Footer -->
+      <div class="ex-footer">
+        <div class="ex-feedback hidden" id="ex-feedback">
+          <div class="ex-feedback-icon" id="ex-feedback-icon"></div>
+          <div class="ex-feedback-text" id="ex-feedback-text"></div>
+        </div>
+        <button class="ex-check-btn" id="ex-check-btn" disabled>Check</button>
+      </div>
+    </div>
+
+    <!-- ===== LESSON COMPLETE SCREEN ===== -->
+    <div class="lesson-complete-screen hidden" id="lesson-complete-screen">
+      <div class="lc-content">
+        <div class="lc-stars" id="lc-stars">
+          <span class="lc-star">&#x2B50;</span>
+          <span class="lc-star">&#x2B50;</span>
+          <span class="lc-star">&#x2B50;</span>
+        </div>
+        <h2 class="lc-title" id="lc-title">Lesson Complete!</h2>
+        <div class="lc-stats">
+          <div class="lc-stat">
+            <span class="lc-stat-value" id="lc-xp">+0</span>
+            <span class="lc-stat-label">XP Earned</span>
+          </div>
+          <div class="lc-stat">
+            <span class="lc-stat-value" id="lc-accuracy">0%</span>
+            <span class="lc-stat-label">Accuracy</span>
+          </div>
+          <div class="lc-stat">
+            <span class="lc-stat-value" id="lc-combo">0</span>
+            <span class="lc-stat-label">Best Combo</span>
+          </div>
+        </div>
+        <div class="lc-xp-bar">
+          <div class="lc-xp-fill" id="lc-xp-fill"></div>
+        </div>
+        <p class="lc-level-text" id="lc-level-text">Level 1</p>
+        <button class="lc-continue-btn" id="lc-continue-btn">Continue</button>
+      </div>
+    </div>
+
+    <!-- ===== NO HEARTS SCREEN ===== -->
+    <div class="no-hearts-screen hidden" id="no-hearts-screen">
+      <div class="nh-content">
+        <div class="nh-icon">&#x1F494;</div>
+        <h2>Out of Hearts!</h2>
+        <p>Hearts recharge over time. Come back soon!</p>
+        <div class="nh-timer" id="nh-timer">Next heart in: --:--</div>
+        <button class="nh-practice-btn" id="nh-practice-btn">Practice Without Hearts</button>
+        <button class="nh-refill-btn" id="nh-refill-btn">Refill Hearts</button>
+      </div>
+    </div>
+
+    <!-- ===== BOOK SELECTOR MODAL ===== -->
+    <div class="modal hidden" id="book-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Choose a Book</h2>
+          <button class="close-btn" id="close-book-modal">&#x2715;</button>
+        </div>
+        <div class="modal-body">
+          <div class="book-list" id="book-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STORY MAP MODAL ===== -->
     <div class="modal hidden" id="story-map">
       <div class="modal-content story-map-content">
         <div class="modal-header">
-          <h2>📚 Choose Your Story</h2>
-          <button class="close-btn" id="close-map" aria-label="Close">✕</button>
+          <h2>&#x1F4DA; Choose Your Story</h2>
+          <button class="close-btn" id="close-map">&#x2715;</button>
         </div>
         <div class="modal-body">
           <div id="story-grid" class="story-grid" role="list"></div>
@@ -202,164 +471,68 @@
       </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div class="modal hidden" id="settings-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>⚙️ Settings</h2>
-          <button class="close-btn" id="close-settings" aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="setting-group">
-            <label class="setting-label">Reading Speed</label>
-            <div class="speed-options">
-              <button class="speed-option" data-speed="0.15">🐌 Super Slow</button>
-              <button class="speed-option" data-speed="0.25">🐢 Very Slow</button>
-              <button class="speed-option" data-speed="0.4">🐇 Slow</button>
-              <button class="speed-option active" data-speed="0.6">🚶 Normal</button>
-              <button class="speed-option" data-speed="0.85">🏃 Fast</button>
-              <button class="speed-option" data-speed="1.1">🚀 Turbo</button>
-            </div>
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">Text Size</label>
-            <div class="size-slider">
-              <span>A</span>
-              <input type="range" id="text-size" min="1" max="2.5" step="0.1" value="1.5">
-              <span class="large">A</span>
-            </div>
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">Theme</label>
-            <div class="theme-options">
-              <button class="theme-option active" data-theme="light">☀️ Light</button>
-              <button class="theme-option" data-theme="dark">🌙 Dark</button>
-              <button class="theme-option" data-theme="sepia">📜 Sepia</button>
-            </div>
-          </div>
-          <div class="setting-group">
-            <label class="setting-label">Voice</label>
-            <select id="settings-voice-select" class="fancy-select"></select>
-          </div>
-          <div class="setting-group">
-            <label class="setting-label toggle-label">
-              <input type="checkbox" id="auto-advance" checked>
-              <span class="toggle-text">Auto-advance to next story</span>
-            </label>
-          </div>
-          <div class="setting-group">
-            <label class="setting-label toggle-label">
-              <input type="checkbox" id="word-hints" checked>
-              <span class="toggle-text">Show word hints when tapped</span>
-            </label>
-          </div>
-          <div class="setting-group">
-            <label class="setting-label toggle-label">
-              <input type="checkbox" id="show-mascot" checked>
-              <span class="toggle-text">Show Buddy the helper</span>
-            </label>
-          </div>
-          <button class="btn-danger" id="reset-progress">Reset All Progress</button>
-        </div>
+    <!-- ===== LEVEL UP MODAL ===== -->
+    <div class="level-up-modal hidden" id="level-up-modal">
+      <div class="lu-content">
+        <div class="lu-burst"></div>
+        <div class="lu-level" id="lu-level">2</div>
+        <h2>Level Up!</h2>
+        <p class="lu-message" id="lu-message">Keep going!</p>
+        <button class="lu-btn" id="lu-continue">Awesome!</button>
       </div>
     </div>
 
-    <!-- Achievements Modal -->
-    <div class="modal hidden" id="achievements-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>🏆 My Achievements</h2>
-          <button class="close-btn" id="close-achievements" aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="achievements-summary">
-            <div class="achievement-count">
-              <span id="unlocked-count">0</span> / <span id="total-achievements">12</span>
-            </div>
-            <p>achievements unlocked</p>
-          </div>
-          <div class="achievements-grid" id="achievements-grid"></div>
-        </div>
-      </div>
+    <!-- ===== COMBO INDICATOR ===== -->
+    <div class="combo-indicator hidden" id="combo-indicator">
+      <span class="combo-fire">&#x1F525;</span>
+      <span class="combo-count" id="combo-count">0</span>
+      <span class="combo-label">combo</span>
     </div>
 
-    <!-- Help Modal -->
-    <div class="modal hidden" id="help-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>❓ How to Play</h2>
-          <button class="close-btn" id="close-help" aria-label="Close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="help-card">
-            <div class="help-icon">▶️</div>
-            <div class="help-content">
-              <h3>Listen to Stories</h3>
-              <p>Press the big <strong>Play</strong> button and watch the words light up as they're read!</p>
-            </div>
-          </div>
-          <div class="help-card">
-            <div class="help-icon">🎤</div>
-            <div class="help-content">
-              <h3>Read Aloud</h3>
-              <p>Press <strong>Read</strong> and speak! Green means you got it right!</p>
-            </div>
-          </div>
-          <div class="help-card">
-            <div class="help-icon">⭐</div>
-            <div class="help-content">
-              <h3>Earn Stars</h3>
-            <p>Finish stories and press <strong>Star</strong> to collect stars. Earn <strong>5 stars</strong> to unlock Book 2!</p>
-            </div>
-          </div>
-          <div class="help-card">
-            <div class="help-icon">📖</div>
-            <div class="help-content">
-              <h3>Tap Any Word</h3>
-              <p>Tap a word to hear how it sounds and see how to read it!</p>
-            </div>
-          </div>
-          <div class="help-shortcuts">
-            <h3>⌨️ Keyboard Shortcuts</h3>
-            <div class="shortcut-list">
-              <div class="shortcut"><kbd>Space</kbd> Play / Pause</div>
-              <div class="shortcut"><kbd>←</kbd> <kbd>→</kbd> Change Story</div>
-              <div class="shortcut"><kbd>M</kbd> Story Map</div>
-              <div class="shortcut"><kbd>F</kbd> Fullscreen</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- ===== XP POPUP ===== -->
+    <div class="xp-popup hidden" id="xp-popup">
+      <span id="xp-popup-text">+10 XP</span>
     </div>
 
-    <!-- Word Hint Tooltip -->
-    <div class="word-hint hidden" id="word-hint">
-      <div class="hint-word" id="hint-word"></div>
-      <div class="hint-phonics" id="hint-phonics"></div>
-      <button class="hint-speak" id="hint-speak">🔊 Say It!</button>
-    </div>
-
-    <!-- Achievement Toast -->
+    <!-- ===== ACHIEVEMENT TOAST ===== -->
     <div class="achievement-toast hidden" id="achievement-toast">
-      <div class="toast-confetti">🎉</div>
+      <div class="toast-confetti">&#x1F389;</div>
       <div class="toast-content">
         <div class="toast-title">Achievement Unlocked!</div>
         <div class="toast-message" id="toast-message"></div>
       </div>
-      <div class="toast-confetti">🎊</div>
+      <div class="toast-confetti">&#x1F38A;</div>
     </div>
 
-    <!-- Celebration Overlay -->
-    <div class="celebration-overlay hidden" id="celebration-overlay">
-      <div class="celebration-content">
-        <div class="celebration-stars">⭐ ⭐ ⭐</div>
-        <h2 class="celebration-title" id="celebration-title">Amazing!</h2>
-        <p class="celebration-message" id="celebration-message">You're doing great!</p>
-      </div>
+    <!-- ===== WORD HINT TOOLTIP ===== -->
+    <div class="word-hint hidden" id="word-hint">
+      <div class="hint-word" id="hint-word"></div>
+      <div class="hint-phonics" id="hint-phonics"></div>
+      <button class="hint-speak" id="hint-speak">&#x1F50A; Say It!</button>
+    </div>
+
+    <!-- Hidden elements for compatibility -->
+    <div class="hidden">
+      <span id="stories-read">0</span>
+      <span id="accuracy-stat">0%</span>
+      <span id="time-spent">0m</span>
+      <button id="prev-btn"></button>
+      <button id="next-btn"></button>
+      <button id="stop-btn" disabled></button>
+      <button id="help-btn"></button>
+      <button id="fullscreen-btn"></button>
+      <button id="dark-mode-btn"></button>
+      <button id="focus-mode-btn"></button>
+      <button id="achievements-btn"></button>
+      <select id="settings-voice-select"></select>
+      <span id="star-count">0</span>
+      <input type="checkbox" id="auto-advance" checked>
+      <input type="checkbox" id="word-hints" checked>
+      <input type="checkbox" id="show-mascot" checked>
+      <span id="unlocked-count">0</span>
+      <span id="total-achievements">12</span>
     </div>
   </div>
-
-  <button id="top-btn" class="top-btn" aria-label="Back to top">⬆️</button>
 
   <noscript>
     <div class="noscript-message">
@@ -368,6 +541,12 @@
     </div>
   </noscript>
 
+  <!-- Module Scripts -->
+  <script src="sounds.js"></script>
+  <script src="gamification.js"></script>
+  <script src="vocabulary.js"></script>
+  <script src="exercises.js"></script>
+  <script src="learning-path.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
