@@ -1,11 +1,11 @@
 {
   "name": "PhonicsWorld - Learn to Read!",
   "short_name": "PhonicsWorld",
-  "description": "A world-class interactive reading app for children with speech recognition, achievements, and engaging stories.",
+  "description": "A world-class interactive language learning app with exercises, gamification, spaced repetition, and AI-powered speech recognition.",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#F8F9FE",
-  "theme_color": "#6C5CE7",
+  "background_color": "#FFFFFF",
+  "theme_color": "#58CC02",
   "orientation": "any",
-  "categories": ["education", "kids", "books"]
+  "categories": ["education", "kids", "books", "language"]
 }
