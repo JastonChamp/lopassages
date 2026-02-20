@@ -104,6 +104,14 @@
         </div>
       </div>
 
+      <section class="missions-card" id="missions-card">
+        <div class="missions-head">
+          <h3>Daily Missions</h3>
+          <span id="missions-xp-left">+0 XP left</span>
+        </div>
+        <div id="missions-list"></div>
+      </section>
+
       <!-- Learning Path (Duolingo-style vertical path) -->
       <div class="learning-path" id="learning-path">
         <!-- Dynamically populated skill nodes -->
@@ -151,6 +159,15 @@
           <!-- Dynamically populated -->
         </div>
       </div>
+
+      <section class="coach-card" id="coach-card">
+        <h3>Smart Coach</h3>
+        <p id="coach-tip">Keep learning to unlock tailored tips.</p>
+        <div class="coach-actions">
+          <button class="coach-action-btn" id="coach-practice-weak">Practice Weak Words</button>
+          <button class="coach-action-btn" id="coach-power-minute">Power Minute (+5 XP)</button>
+        </div>
+      </section>
     </div>
 
     <!-- ===== STORIES TAB (original reading mode) ===== -->
@@ -305,6 +322,11 @@
       <div class="achievements-section">
         <h3>Achievements</h3>
         <div class="achievements-grid" id="achievements-grid"></div>
+      </div>
+
+      <div class="league-section" id="league-section">
+        <h3>Weekly League</h3>
+        <div class="league-list" id="league-list"></div>
       </div>
 
       <!-- Daily Goal -->
@@ -548,5 +570,6 @@
   <script src="exercises.js"></script>
   <script src="learning-path.js"></script>
   <script src="script.js"></script>
+  <script src="world-class-upgrade.js"></script>
 </body>
 </html>
