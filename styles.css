@@ -1491,3 +1491,93 @@ body::before {
 }
 
 .hidden { display: none !important; }
+
+/* ===== World Class Upgrade Additions ===== */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-md);
+}
+
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(800px, 100%);
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  z-index: 20;
+}
+
+.tab-item {
+  border: none;
+  background: transparent;
+  padding: 10px 6px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.tab-item.active { color: var(--primary); }
+
+.missions-card,
+.coach-card,
+.league-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin: var(--space-md) 0;
+}
+
+.missions-head,
+.mission-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mission-row { margin-top: 10px; }
+.mission-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  margin: 8px 0;
+}
+.mission-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+.mission-claim,
+.coach-action-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+}
+.mission-claim:disabled { opacity: 0.5; }
+
+.coach-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.league-list { display: grid; gap: 8px; margin-top: 10px; }
+.league-row {
+  display: flex;
+  justify-content: space-between;
+  background: var(--bg-main);
+  padding: 10px;
+  border-radius: 10px;
+}
+.league-row.is-me { outline: 2px solid var(--primary-light); }
